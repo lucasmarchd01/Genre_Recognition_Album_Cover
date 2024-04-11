@@ -145,18 +145,26 @@ def get_art_from_tsv(filename: str) -> List[Art]:
     unique_values = release_group.unique().tolist()
 
     art_objects = []
-    for mbid in unique_values:
-        logging.info(f"retrieving art for  mbid: {mbid}")
-        art = Art()
-        art.mbid = mbid
-        art.get_response(f"https://coverartarchive.org/release-group/{art.mbid}")
-        art.download()
-        art_objects.append(art)
+    try:
+        for mbid in unique_values:
+            logging.info(f"retrieving art for mbid: {mbid}")
+            art = Art()
+            art.mbid = mbid
+            art.get_response(f"https://coverartarchive.org/release-group/{art.mbid}")
+            art.download()
+            art_objects.append(art)
+    except KeyboardInterrupt:
+        logging.info("KeyboardInterrupt received. Saving collected data...")
+        store_to_csv(art_objects, "data/csv/output_interrupted.csv")
+        logging.info("Collected data saved.")
+        raise  # Re-raise KeyboardInterrupt to exit gracefully
 
     return art_objects
 
 
-def store_to_csv(art_objects: List[Art], output_filename: str) -> None:
+def store_to_csv(
+    art_objects: List[Art], output_filename: str = "mbid_to_image_filenames.csv"
+) -> None:
     """
     Store MBID and image location mappings to a CSV file.
 
@@ -178,7 +186,8 @@ def main():
 
     parser = argparse.ArgumentParser()
     parser.add_argument("filename")
-    parser.add_argument("--download", action="store_true")
+    parser.add_argument("-d", "--download", action="store_true")
+    parser.add_argument("-o", "--output")
     args = parser.parse_args()
 
     os.makedirs("logs", exist_ok=True)
@@ -193,14 +202,13 @@ def main():
 
     os.makedirs("data", exist_ok=True)
     os.makedirs("data/images", exist_ok=True)
+    os.makedirs("data/csv", exist_ok=True)
 
-    try:
-        art_objects = get_art_from_tsv(args.filename)
+    art_objects = get_art_from_tsv(args.filename)
+    if args.output:
         store_to_csv(art_objects, args.output)
-    except KeyboardInterrupt:
-        logging.info("KeyboardInterrupt received. Saving collected data...")
-        store_to_csv(art_objects, args.output)
-        logging.info("Collected data saved.")
+    else:
+        store_to_csv(art_objects)
 
 
 if __name__ == "__main__":
