@@ -111,8 +111,6 @@ def read_tsv(filename: str) -> pd.DataFrame:
     """
     Read data from a tab-separated values (TSV) file into a DataFrame.
 
-    This function reads data from a TSV file into a pandas DataFrame.
-
     Args:
         filename (str): The filename of the TSV file to read.
 
