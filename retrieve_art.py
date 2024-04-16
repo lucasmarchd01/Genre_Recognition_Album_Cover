@@ -143,6 +143,8 @@ def get_art_from_tsv(filename: str) -> List[Art]:
     unique_values = release_group.unique().tolist()
 
     art_objects = []
+    total = len(unique_values)
+    count = 0
     try:
         for mbid in unique_values:
             logging.info(f"retrieving art for mbid: {mbid}")
@@ -151,6 +153,11 @@ def get_art_from_tsv(filename: str) -> List[Art]:
             art.get_response(f"https://coverartarchive.org/release-group/{art.mbid}")
             art.download()
             art_objects.append(art)
+            count += 1
+            if count % 100 == 0:
+                print(
+                    f"------------------- finished {count} of {total} -------------------"
+                )
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt received. Saving collected data...")
         store_to_csv(art_objects, "data/csv/output_interrupted.csv")
