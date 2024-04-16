@@ -3,9 +3,10 @@ import numpy as np
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
-from sklearn.metrics import confusion_matrix, f1_score
+from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
+import os
 
 import tensorflow as tf
 import keras
@@ -47,9 +48,7 @@ class ImageClassifier:
             )
 
         # Split the balanced dataset into train, validation, and test sets
-        train_data, test_data = train_test_split(
-            balanced_data, test_size=0.2, random_state=42
-        )
+        train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
         train_data, val_data = train_test_split(
             train_data, test_size=0.2, random_state=42
         )
@@ -114,7 +113,7 @@ class ImageClassifier:
         )
 
     def train(self, epochs=2):
-        checkpoint_path = "best_model.keras"
+        checkpoint_path = "results/best_model.keras"
         checkpoint_callback = ModelCheckpoint(checkpoint_path, save_best_only=True)
 
         history = self.model.fit(
@@ -124,22 +123,22 @@ class ImageClassifier:
             validation_data=self.val_generator,
             validation_steps=self.val_generator.n // self.batch_size,
             callbacks=[
-                EarlyStopping(patience=3, restore_best_weights=True),
+                EarlyStopping(patience=5, restore_best_weights=True),
                 checkpoint_callback,
             ],
         )
 
-        # Plot training and validation accuracy
+        # Save training and validation accuracy plots
         plt.plot(history.history["accuracy"], label="Training Accuracy")
         plt.plot(history.history["val_accuracy"], label="Validation Accuracy")
         plt.xlabel("Epochs")
         plt.ylabel("Accuracy")
         plt.legend()
-        plt.show()
+        plt.savefig("results/training_validation_accuracy.png")
+        plt.close()
 
     def evaluate(self):
         test_loss, test_accuracy = self.model.evaluate(self.test_generator)
-        print(f"Test Loss: {test_loss}, Test Accuracy: {test_accuracy}")
 
         # Get class labels
         class_labels = list(self.train_generator.class_indices.keys())
@@ -159,20 +158,21 @@ class ImageClassifier:
         plt.title("Confusion Matrix")
         plt.xticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
         plt.yticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
-        plt.show()
+        plt.savefig("results/confusion_matrix.png")
+        plt.close()
 
-        # Compute F1 score
-        f1 = f1_score(y_true, y_pred, average="weighted")
-        print(f"F1 Score: {f1}")
+        # Compute and print classification report
+        report = classification_report(y_true, y_pred, target_names=class_labels)
 
         # Save results to a text file
-        with open("results.txt", "w") as f:
+        with open("results/results.txt", "w") as f:
             f.write(f"Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n")
-            f.write(f"F1 Score: {f1}\n")
-            f.write(f"Confusion Matrix:\n{cm}")
+            f.write(f"Classification Report:\n{report}\n")
+            f.write(f"Confusion Matrix:\n{cm}\n")
 
 
 def main():
+    os.makedirs("results", exist_ok=True)
     classifier = ImageClassifier()
     classifier.load_data("top_5_genres_subset.csv")
     classifier.build_model()

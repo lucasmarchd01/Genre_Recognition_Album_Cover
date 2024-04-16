@@ -54,7 +54,7 @@ def filter_most_frequent_genres(df: pd.DataFrame) -> pd.DataFrame:
     genre_counts = genre_columns.stack().value_counts()
 
     # Select the top 5 most frequent genres
-    top_5_genres = genre_counts.head(5).index.tolist()
+    top_5_genres = genre_counts.head(6).index.tolist()
 
     # Filter the genre columns to keep only the top 5 most frequent genres
     filtered_genre_columns = genre_columns.apply(
