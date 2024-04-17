@@ -79,17 +79,17 @@ def add_tilde_slash(image_csv, new_image_csv):
         data = list(reader)
 
     for row in data:
-        row[1] = "~/{}".format(row[1])
+        row[1] = row[1].replace("~/", "")
 
     with open(new_image_csv, "w", newline="") as file:
         writer = csv.writer(file)
         writer.writerows(data)
 
 
-# # Example usage:
-# original_image_csv = "data/csv/mapped_mbid_with_labels.csv"
-# new_image_csv = "data/csv/final.csv"
-# add_tilde_slash(original_image_csv, new_image_csv)
+# Example usage:
+original_image_csv = "$SLURM_TMPDIR/data/data/csv/final_top_6.csv"
+new_image_csv = "$SLURM_TMPDIR/data/data/csv/final_top_6.csv"
+add_tilde_slash(original_image_csv, new_image_csv)
 
 
 # original_dataframe = pd.read_csv(
@@ -102,6 +102,6 @@ def add_tilde_slash(image_csv, new_image_csv):
 # mapped_dataframe.to_csv(output_filename, index=False)
 
 
-mapped_dataframe = pd.read_csv("data/csv/final.csv")
-filtered_dataframe = filter_most_frequent_genres(mapped_dataframe)
-filtered_dataframe.to_csv("data/csv/final_top_6.csv", index=False)
+# mapped_dataframe = pd.read_csv("data/csv/final.csv")
+# filtered_dataframe = filter_most_frequent_genres(mapped_dataframe)
+# filtered_dataframe.to_csv("data/csv/final_top_6.csv", index=False)
