@@ -34,8 +34,9 @@ class ImageClassifier:
 
         # Adjust image locations in the CSV file
         data["image_location"] = data["image_location"].apply(
-            lambda x: os.path.join(directory, "data", "images", x)
+            lambda x: os.path.join(directory, x)
         )
+        print(data.head())
 
         # Balance the dataset
         balanced_data = pd.DataFrame()
