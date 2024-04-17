@@ -7,6 +7,7 @@ from sklearn.metrics import confusion_matrix, classification_report
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
+import argparse
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
@@ -27,8 +28,14 @@ class ImageClassifier:
         self.test_generator = None
         self.model = None
 
-    def load_data(self, csv_filename):
+    def load_data(self, directory):
+        csv_filename = os.path.join(directory, "data", "csv", "final_top_6.csv")
         data = pd.read_csv(csv_filename)
+
+        # Adjust image locations in the CSV file
+        data["image_location"] = data["image_location"].apply(
+            lambda x: os.path.join(directory, "data", "images", x)
+        )
 
         # Balance the dataset
         balanced_data = pd.DataFrame()
@@ -170,14 +177,17 @@ class ImageClassifier:
             f.write(f"Confusion Matrix:\n{cm}\n")
 
 
-def main():
+def main(args):
     os.makedirs("results", exist_ok=True)
     classifier = ImageClassifier()
-    classifier.load_data("~/data/csv/final_top_6.csv")
+    classifier.load_data(args.directory)
     classifier.build_model()
     classifier.train()
     classifier.evaluate()
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("directory", type=str, help="Path to the directory")
+    args = parser.parse_args()
+    main(args)
