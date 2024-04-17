@@ -9,7 +9,6 @@ import seaborn as sns
 import os
 
 import tensorflow as tf
-import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Sequential
@@ -174,7 +173,7 @@ class ImageClassifier:
 def main():
     os.makedirs("results", exist_ok=True)
     classifier = ImageClassifier()
-    classifier.load_data("top_5_genres_subset.csv")
+    classifier.load_data("~/data/csv/final_top_6.csv")
     classifier.build_model()
     classifier.train()
     classifier.evaluate()

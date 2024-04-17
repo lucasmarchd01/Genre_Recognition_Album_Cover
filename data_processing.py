@@ -1,4 +1,5 @@
 import pandas as pd
+import csv
 
 
 def map_labels_to_mbid(
@@ -54,7 +55,7 @@ def filter_most_frequent_genres(df: pd.DataFrame) -> pd.DataFrame:
     genre_counts = genre_columns.stack().value_counts()
 
     # Select the top 5 most frequent genres
-    top_5_genres = genre_counts.head(6).index.tolist()
+    top_5_genres = genre_counts.head(7).index.tolist()
 
     # Filter the genre columns to keep only the top 5 most frequent genres
     filtered_genre_columns = genre_columns.apply(
@@ -72,6 +73,25 @@ def filter_most_frequent_genres(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def add_tilde_slash(image_csv, new_image_csv):
+    with open(image_csv, "r") as file:
+        reader = csv.reader(file)
+        data = list(reader)
+
+    for row in data:
+        row[1] = "~/{}".format(row[1])
+
+    with open(new_image_csv, "w", newline="") as file:
+        writer = csv.writer(file)
+        writer.writerows(data)
+
+
+# # Example usage:
+# original_image_csv = "data/csv/mapped_mbid_with_labels.csv"
+# new_image_csv = "data/csv/final.csv"
+# add_tilde_slash(original_image_csv, new_image_csv)
+
+
 # original_dataframe = pd.read_csv(
 #     "/Users/lucasmarch/Projects/AcousticBrainz/acousticbrainz-mediaeval-allmusic-train.tsv",
 #     sep="\t",
@@ -82,6 +102,6 @@ def filter_most_frequent_genres(df: pd.DataFrame) -> pd.DataFrame:
 # mapped_dataframe.to_csv(output_filename, index=False)
 
 
-mapped_dataframe = pd.read_csv("subset.csv")
+mapped_dataframe = pd.read_csv("data/csv/final.csv")
 filtered_dataframe = filter_most_frequent_genres(mapped_dataframe)
-filtered_dataframe.to_csv("top_5_genres_subset.csv", index=False)
+filtered_dataframe.to_csv("data/csv/final_top_6.csv", index=False)
