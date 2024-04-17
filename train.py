@@ -36,7 +36,6 @@ class ImageClassifier:
         data["image_location"] = data["image_location"].apply(
             lambda x: os.path.join(directory, x)
         )
-        print(data.head())
 
         # Balance the dataset
         balanced_data = pd.DataFrame()
