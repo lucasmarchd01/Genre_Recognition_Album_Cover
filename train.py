@@ -119,7 +119,7 @@ class ImageClassifier:
             optimizer=Adam(), loss="categorical_crossentropy", metrics=["accuracy"]
         )
 
-    def train(self, epochs=2):
+    def train(self, epochs=30):
         checkpoint_path = "results/best_model.keras"
         checkpoint_callback = ModelCheckpoint(checkpoint_path, save_best_only=True)
 
