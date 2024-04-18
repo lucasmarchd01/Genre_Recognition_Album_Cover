@@ -36,7 +36,6 @@ class ImageClassifier:
         data["image_location"] = data["image_location"].apply(
             lambda x: os.path.join(directory, x)
         )
-        print(data.head())
 
         # Balance the dataset
         balanced_data = pd.DataFrame()
@@ -53,6 +52,14 @@ class ImageClassifier:
                     ),
                 ]
             )
+
+        # Print distribution of genres
+        print("Distribution of genres after balancing:")
+        print(balanced_data["genre_label"].value_counts())
+
+        # Print head of the data
+        print("Head of the data after balancing:")
+        print(balanced_data.head())
 
         # Split the balanced dataset into train, validation, and test sets
         train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
@@ -100,8 +107,8 @@ class ImageClassifier:
             input_shape=(self.img_width, self.img_height, 3),
         )
 
-        for layer in base_model.layers:
-            layer.trainable = False
+        # for layer in base_model.layers:
+        #     layer.trainable = False
 
         self.model = Sequential(
             [
@@ -114,6 +121,8 @@ class ImageClassifier:
                 Dense(len(self.train_generator.class_indices), activation="softmax"),
             ]
         )
+
+        self.model.summary()
 
         self.model.compile(
             optimizer=Adam(), loss="categorical_crossentropy", metrics=["accuracy"]
@@ -179,7 +188,14 @@ class ImageClassifier:
 
 
 def main(args):
-    os.makedirs("results", exist_ok=True)
+    # Determine the results directory name
+    results_dir = "results"
+    count = 1
+    while os.path.exists(results_dir):
+        results_dir = f"results_{count}"
+        count += 1
+
+    os.makedirs(results_dir, exist_ok=True)
     classifier = ImageClassifier()
     classifier.load_data(args.directory)
     classifier.build_model()
