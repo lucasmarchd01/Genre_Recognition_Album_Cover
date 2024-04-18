@@ -110,8 +110,8 @@ class ImageClassifier:
             input_shape=(self.img_width, self.img_height, 3),
         )
 
-        # for layer in base_model.layers:
-        #     layer.trainable = False
+        for layer in base_model.layers:
+            layer.trainable = False
 
         self.model = Sequential(
             [
@@ -142,7 +142,7 @@ class ImageClassifier:
             validation_data=self.val_generator,
             validation_steps=self.val_generator.n // self.batch_size,
             callbacks=[
-                EarlyStopping(patience=5, restore_best_weights=True),
+                EarlyStopping(patience=7, restore_best_weights=True),
                 checkpoint_callback,
             ],
         )
