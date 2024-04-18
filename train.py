@@ -20,6 +20,7 @@ from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 class ImageClassifier:
     def __init__(self, img_width=250, img_height=250, batch_size=32):
+        self.results_dir: str = None
         self.img_width = img_width
         self.img_height = img_height
         self.batch_size = batch_size
@@ -131,7 +132,7 @@ class ImageClassifier:
         )
 
     def train(self, epochs=30):
-        checkpoint_path = "results/best_model.keras"
+        checkpoint_path = f"{self.results_dir}/best_model.keras"
         checkpoint_callback = ModelCheckpoint(checkpoint_path, save_best_only=True)
 
         history = self.model.fit(
@@ -152,7 +153,7 @@ class ImageClassifier:
         plt.xlabel("Epochs")
         plt.ylabel("Accuracy")
         plt.legend()
-        plt.savefig("results/training_validation_accuracy.png")
+        plt.savefig(f"{self.results_dir}/training_validation_accuracy.png")
         plt.close()
 
     def evaluate(self):
@@ -176,14 +177,14 @@ class ImageClassifier:
         plt.title("Confusion Matrix")
         plt.xticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
         plt.yticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
-        plt.savefig("results/confusion_matrix.png")
+        plt.savefig(f"{self.results_dir}/confusion_matrix.png")
         plt.close()
 
         # Compute and print classification report
         report = classification_report(y_true, y_pred, target_names=class_labels)
 
         # Save results to a text file
-        with open("results/results.txt", "w") as f:
+        with open(f"{self.results_dir}/results.txt", "w") as f:
             f.write(f"Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n")
             f.write(f"Classification Report:\n{report}\n")
             f.write(f"Confusion Matrix:\n{cm}\n")
@@ -199,6 +200,7 @@ def main(args):
 
     os.makedirs(results_dir, exist_ok=True)
     classifier = ImageClassifier()
+    classifier.results_dir = results_dir
     classifier.load_data(args.directory)
     classifier.build_model()
     classifier.train()
