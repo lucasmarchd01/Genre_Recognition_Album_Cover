@@ -62,7 +62,9 @@ class ImageClassifier:
         print(balanced_data.head())
 
         # Split the balanced dataset into train, validation, and test sets
-        train_data, test_data = train_test_split(data, test_size=0.2, random_state=42)
+        train_data, test_data = train_test_split(
+            balanced_data, test_size=0.2, random_state=42
+        )
         train_data, val_data = train_test_split(
             train_data, test_size=0.2, random_state=42
         )
