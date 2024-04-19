@@ -80,6 +80,8 @@ class ImageClassifier:
             batch_size=self.batch_size,
             class_mode="categorical",
         )
+        print(self.train_generator)
+        print(pd.DataFrame(self.train_generator).value_counts())
 
         val_datagen = ImageDataGenerator(rescale=1.0 / 255)
         self.val_generator = val_datagen.flow_from_dataframe(
@@ -105,14 +107,14 @@ class ImageClassifier:
 
     def build_model(self):
         base_model = VGG16(
-            weights=None,
+            weights="Imagenet",
             include_top=False,
             input_shape=(self.img_width, self.img_height, 3),
         )
 
         base_model.summary()
-        # for layer in base_model.layers:
-        #     layer.trainable = False
+        for layer in base_model.layers:
+            layer.trainable = False
 
         self.model = Sequential(
             [
@@ -129,7 +131,9 @@ class ImageClassifier:
         self.model.summary()
 
         self.model.compile(
-            optimizer=Adam(), loss="categorical_crossentropy", metrics=["accuracy"]
+            optimizer=Adam(learning_rate=0.00005),
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
         )
 
     def train(self, epochs=100):
