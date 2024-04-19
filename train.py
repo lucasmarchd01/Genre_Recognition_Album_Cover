@@ -105,21 +105,22 @@ class ImageClassifier:
 
     def build_model(self):
         base_model = VGG16(
-            weights="imagenet",
+            weights=None,
             include_top=False,
             input_shape=(self.img_width, self.img_height, 3),
         )
 
-        for layer in base_model.layers:
-            layer.trainable = False
+        base_model.summary()
+        # for layer in base_model.layers:
+        #     layer.trainable = False
 
         self.model = Sequential(
             [
                 base_model,
                 Flatten(),
-                Dense(256, activation="relu"),
+                Dense(4096, activation="relu"),
                 Dropout(0.5),
-                Dense(128, activation="relu"),
+                Dense(1072, activation="relu"),
                 Dropout(0.5),
                 Dense(len(self.train_generator.class_indices), activation="softmax"),
             ]
@@ -131,7 +132,7 @@ class ImageClassifier:
             optimizer=Adam(), loss="categorical_crossentropy", metrics=["accuracy"]
         )
 
-    def train(self, epochs=30):
+    def train(self, epochs=100):
         checkpoint_path = f"{self.results_dir}/best_model.keras"
         checkpoint_callback = ModelCheckpoint(checkpoint_path, save_best_only=True)
 
@@ -142,7 +143,7 @@ class ImageClassifier:
             validation_data=self.val_generator,
             validation_steps=self.val_generator.n // self.batch_size,
             callbacks=[
-                EarlyStopping(patience=7, restore_best_weights=True),
+                EarlyStopping(patience=20, restore_best_weights=True),
                 checkpoint_callback,
             ],
         )
