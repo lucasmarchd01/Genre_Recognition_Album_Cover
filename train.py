@@ -147,9 +147,10 @@ class ImageClassifier:
             validation_data=self.val_generator,
             validation_steps=self.val_generator.n // self.batch_size,
             callbacks=[
-                EarlyStopping(patience=20, restore_best_weights=True),
+                EarlyStopping(patience=20, restore_best_weights=True, verbose=1),
                 checkpoint_callback,
             ],
+            verbose=1,
         )
 
         # Save training and validation accuracy plots
