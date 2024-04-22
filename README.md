@@ -7,7 +7,9 @@ This project aims to classify music genres using album cover images. The classif
 The project consists of three main components:
 
 - Data Retrieval:
-    - The retrieve_art.py script retrieves album cover images from the [Cover Art Archive API](https://wiki.musicbrainz.org/Cover_Art_Archive/API) based on MusicBrainz release group IDs (MBIDs) stored in a tab-separated values (TSV) file. It downloads the images, stores them locally, and saves the file paths to a CSV file.
+    - The retrieve_art.py script retrieves album cover images from the [Cover Art Archive API](https://wiki.musicbrainz.org/Cover_Art_Archive/API) based on MusicBrainz release group IDs (MBIDs) stored in a tab-separated values (TSV) file. 
+    - It downloads the images, stores them locally, and saves the file paths to a CSV file.
+    - The TSV file can be found [here](https://zenodo.org/records/2554044)
 
 - Data Processing:  
     - The data_processing.py script preprocesses the data by mapping genre labels to MBIDs and adjusting image file paths. It also filters the data to only include the top 6 most frequent genre classes.
@@ -83,7 +85,8 @@ Replace <tsv-filename> with the path to the TSV file containing MBIDs, and <dire
 │   ├── best_model.keras
 │   ├── confusion_matrix.png
 │   ├── results.txt
-│   └── training_validation_accuracy.png
+│   ├── training_validation_accuracy.png
+│   └── training_validation_loss.png
 ├── retrieve_art.py
 ├── data_processing.py
 ├── train.py
