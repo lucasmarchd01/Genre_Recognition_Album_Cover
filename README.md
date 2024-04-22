@@ -1,19 +1,19 @@
 # Music Genre Classification using Album Covers
 
-This project aims to classify music genres using album cover images. The classification is based on deep learning techniques, specifically convolutional neural networks (CNNs), trained on a dataset of album cover images associated with different music genres. The dataset is generated from the (The AcousticBrainz Genre Dataset)[https://mtg.github.io/acousticbrainz-genre-dataset/].
+This project aims to classify music genres using album cover images. The classification is based on deep learning techniques, specifically convolutional neural networks (CNNs), trained on a dataset of album cover images associated with different music genres. The dataset is generated from the [The AcousticBrainz Genre Dataset](https://mtg.github.io/acousticbrainz-genre-dataset/).
 
 ## Overview
 
 The project consists of three main components:
 
-    Data Retrieval:
-        The retrieve_art.py script retrieves album cover images from the Cover Art Archive API based on MusicBrainz release group IDs (MBIDs) stored in a tab-separated values (TSV) file. It downloads the images, stores them locally, and saves the file paths to a CSV file.
+- Data Retrieval:
+    - The retrieve_art.py script retrieves album cover images from the Cover Art Archive API based on MusicBrainz release group IDs (MBIDs) stored in a tab-separated values (TSV) file. It downloads the images, stores them locally, and saves the file paths to a CSV file.
 
-    Data Processing:  
-        The data_processing.py script preprocesses the data by mapping genre labels to MBIDs and adjusting image file paths. It also filters the data to only include the top 6 most frequent genre classes.
+- Data Processing:  
+    - The data_processing.py script preprocesses the data by mapping genre labels to MBIDs and adjusting image file paths. It also filters the data to only include the top 6 most frequent genre classes.
 
-    Model Training:
-        The train.py script trains a CNN model on the preprocessed dataset. It uses the VGG16 pre-trained model as the base and fine-tunes it on the album cover images.
+- Model Training:
+    - The train.py script trains a CNN model on the preprocessed dataset. It uses the VGG16 pre-trained model as the base and fine-tunes it on the album cover images.
 
 ## Requirements
 
@@ -78,14 +78,14 @@ Directory Structure:
 The trained model is saved in the results directory along with evaluation metrics such as the confusion matrix and classification report.
 - best_model.keras 
 - confusion_matrix.png
-- results.txt, which contains
-    - test loss, test accuracy, classification report(precision, recall, f1 score for each class) and confusion matrix
+- results.txt, which contains:
+    - test loss, test accuracy, classification report (precision, recall, f1 score for each class) and confusion matrix
 - training and validation accuracy over each epoch of training
 - training and validation loss over each epoch of training
 
 ## Credits
 
-This project utilizes data from the (Cover Art Archive)[https://coverartarchive.org/] and the (MusicBrainz[https://musicbrainz.org/]) database.
+This project utilizes data from the [Cover Art Archive](https://coverartarchive.org/) and the [MusicBrainz](https://musicbrainz.org/) database.
 
 ```
 Bogdanov, D., Porter A., Schreiber H., Urbano J., & Oramas S. (2019).
