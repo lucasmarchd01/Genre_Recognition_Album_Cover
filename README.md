@@ -49,16 +49,22 @@ Replace <tsv-filename> with the path to the TSV file containing MBIDs, and <dire
 ### Running on Digital Research Alliance of Canada (GPU)
 
 - Load modules required by TensorFlow:
+
 `[name@server ~]$ module load python/3.10 cuda/12.2 cudnn/8.9.5.29`
 - Create a new Python virtual environment:
+
 `[name@server ~]$ virtualenv --no-download tensorflow`
 - Activate Python virtual environment:
+
 `[name@server ~]$ source tensorflow/bin/activate`
 - Install TensorFlow:
+
 `(tensorflow) [name@server ~]$ pip install --no-index tensorflow`
 - Install requirements from `requirementsvenv.txt`:
+
 `pip install -r requirementsvenv.txt --no-index`
 - Submit a job using the supplied bash script and `sbatch` command (this example is on the Cedar cluster):
+
 `sbatch genre-recognition.sh --gres=gpu:1 --cpus-per-task=6 --mem=32000M --time=6:00:00`
 
 Directory Structure:
