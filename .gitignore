@@ -3,4 +3,5 @@
 /logs
 /genre-recognition
 /results_*
+/results/*.keras
 .DS_Store
