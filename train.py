@@ -11,10 +11,11 @@ import argparse
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.layers.experimental.preprocessing import Rescaling
+
+# from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Flatten, Cov2D, MaxPoolong2D
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
@@ -39,21 +40,35 @@ class ImageClassifier:
             lambda x: os.path.join(directory, x)
         )
 
-        # Balance the dataset
+        # # Balance the dataset (UPSAMPLING)
+        # balanced_data = pd.DataFrame()
+        # for label in data["genre_label"].unique():
+        #     label_data = data[data["genre_label"] == label]
+        #     balanced_data = pd.concat(
+        #         [
+        #             balanced_data,
+        #             resample(
+        #                 label_data,
+        #                 replace=True,
+        #                 n_samples=len(data) // data["genre_label"].nunique(),
+        #                 random_state=42,
+        #             ),
+        #         ]
+        #     )
+
+        # Balance the dataset (DOWNSAMPLING)
         balanced_data = pd.DataFrame()
+        minority_size = data["genre_label"].value_counts().min()
         for label in data["genre_label"].unique():
             label_data = data[data["genre_label"] == label]
-            balanced_data = pd.concat(
-                [
-                    balanced_data,
-                    resample(
-                        label_data,
-                        replace=True,
-                        n_samples=len(data) // data["genre_label"].nunique(),
-                        random_state=42,
-                    ),
-                ]
-            )
+            if len(label_data) > minority_size:
+                label_data = resample(
+                    label_data,
+                    replace=False,
+                    n_samples=minority_size,
+                    random_state=42,
+                )
+            balanced_data = pd.concat([balanced_data, label_data])
 
         # Print distribution of genres
         print("Distribution of genres after balancing:")
@@ -106,63 +121,62 @@ class ImageClassifier:
 
     def build_model(self):
         base_model = VGG16(
-            weights="Imagenet",
+            weights="imagenet",
             include_top=False,
             input_shape=(self.img_width, self.img_height, 3),
         )
 
-        base_model.summary()
         for layer in base_model.layers:
             layer.trainable = False
-
+        base_model.summary()
         self.model = Sequential(
             [
+                Input(shape=(250, 250, 3)),
                 base_model,
                 Flatten(),
-                Dense(2048, activation="relu"),
+                Dense(256, activation="relu"),
                 Dropout(0.5),
-                Dense(1024, activation="relu"),
+                Dense(128, activation="relu"),
                 Dropout(0.5),
                 Dense(len(self.train_generator.class_indices), activation="softmax"),
             ]
         )
-
+        self.model.build()
         self.model.summary()
-
         self.model.compile(
             optimizer=Adam(learning_rate=0.00005),
             loss="categorical_crossentropy",
             metrics=["accuracy"],
         )
 
-    def build_CNN(self):
+    # def build_CNN(self):
 
-        hand_made_model = Sequential()
-        hand_made_model.add(Rescaling(1.0 / 255, input_shape=(150, 150, 3)))
+    #     hand_made_model = Sequential()
+    #     hand_made_model.add(Rescaling(1.0 / 255, input_shape=(150, 150, 3)))
 
-        hand_made_model.add(Conv2D(16, kernel_size=10, activation="relu"))
-        hand_made_model.add(MaxPooling2D(3))
+    #     hand_made_model.add(Conv2D(16, kernel_size=10, activation="relu"))
+    #     hand_made_model.add(MaxPooling2D(3))
 
-        hand_made_model.add(Conv2D(32, kernel_size=8, activation="relu"))
-        hand_made_model.add(MaxPooling2D(2))
+    #     hand_made_model.add(Conv2D(32, kernel_size=8, activation="relu"))
+    #     hand_made_model.add(MaxPooling2D(2))
 
-        hand_made_model.add(Conv2D(32, kernel_size=6, activation="relu"))
-        hand_made_model.add(MaxPooling2D(2))
+    #     hand_made_model.add(Conv2D(32, kernel_size=6, activation="relu"))
+    #     hand_made_model.add(MaxPooling2D(2))
 
-        hand_made_model.add(Flatten())
-        hand_made_model.add(Dense(50, activation="relu"))
-        hand_made_model.add(Dense(20, activation="relu"))
-        hand_made_model.add(Dense(5, activation="softmax"))
+    #     hand_made_model.add(Flatten())
+    #     hand_made_model.add(Dense(50, activation="relu"))
+    #     hand_made_model.add(Dense(20, activation="relu"))
+    #     hand_made_model.add(Dense(5, activation="softmax"))
 
-        self.model = hand_made_model
+    #     self.model = hand_made_model
 
-        self.model.compile(
-            optimizer=Adam(learning_rate=0.00005),
-            loss="categorical_crossentropy",
-            metrics=["accuracy"],
-        )
+    #     self.model.compile(
+    #         optimizer=Adam(learning_rate=0.00005),
+    #         loss="categorical_crossentropy",
+    #         metrics=["accuracy"],
+    #     )
 
-    def train(self, epochs=100):
+    def train(self, epochs=50):
         checkpoint_path = f"{self.results_dir}/best_model.keras"
         checkpoint_callback = ModelCheckpoint(checkpoint_path, save_best_only=True)
 
@@ -173,7 +187,7 @@ class ImageClassifier:
             validation_data=self.val_generator,
             validation_steps=self.val_generator.n // self.batch_size,
             callbacks=[
-                EarlyStopping(patience=20, restore_best_weights=True, verbose=1),
+                EarlyStopping(patience=10, restore_best_weights=True, verbose=1),
                 checkpoint_callback,
             ],
             verbose=1,
