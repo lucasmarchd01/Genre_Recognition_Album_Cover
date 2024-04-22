@@ -11,27 +11,41 @@ import argparse
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-
-# from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Flatten, Conv2D, MaxPooling2D, Input
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Input
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
 
 class ImageClassifier:
     def __init__(self, img_width=250, img_height=250, batch_size=32):
+        """
+        Initialize the ImageClassifier object.
+
+        Args:
+            img_width (int): Width of the input images.
+            img_height (int): Height of the input images.
+            batch_size (int): Batch size for training and evaluation.
+        """
         self.results_dir: str = None
         self.img_width = img_width
         self.img_height = img_height
         self.batch_size = batch_size
+        self.learning_rate = 0.00005
+        self.balance_type: str = "downsampling"  # "downsampling", "upsampling" or None
         self.train_generator = None
         self.val_generator = None
         self.test_generator = None
         self.model = None
 
     def load_data(self, directory):
+        """
+        Load data from the specified directory and prepare it for training.
+
+        Args:
+            directory (str): Path to the directory containing the data.
+        """
         csv_filename = os.path.join(directory, "data", "csv", "final_top_6.csv")
         data = pd.read_csv(csv_filename)
 
@@ -40,42 +54,44 @@ class ImageClassifier:
             lambda x: os.path.join(directory, x)
         )
 
-        # # Balance the dataset (UPSAMPLING)
-        # balanced_data = pd.DataFrame()
-        # for label in data["genre_label"].unique():
-        #     label_data = data[data["genre_label"] == label]
-        #     balanced_data = pd.concat(
-        #         [
-        #             balanced_data,
-        #             resample(
-        #                 label_data,
-        #                 replace=True,
-        #                 n_samples=len(data) // data["genre_label"].nunique(),
-        #                 random_state=42,
-        #             ),
-        #         ]
-        #     )
-
-        # Balance the dataset (DOWNSAMPLING)
-        balanced_data = pd.DataFrame()
-        minority_size = data["genre_label"].value_counts().min()
-        for label in data["genre_label"].unique():
-            label_data = data[data["genre_label"] == label]
-            if len(label_data) > minority_size:
-                label_data = resample(
-                    label_data,
-                    replace=False,
-                    n_samples=minority_size,
-                    random_state=42,
+        if self.balance_type == "upsampling":
+            # Balance the dataset (UPSAMPLING)
+            balanced_data = pd.DataFrame()
+            for label in data["genre_label"].unique():
+                label_data = data[data["genre_label"] == label]
+                balanced_data = pd.concat(
+                    [
+                        balanced_data,
+                        resample(
+                            label_data,
+                            replace=True,
+                            n_samples=len(data) // data["genre_label"].nunique(),
+                            random_state=42,
+                        ),
+                    ]
                 )
-            balanced_data = pd.concat([balanced_data, label_data])
+
+        elif self.balance_type == "downsampling":
+            # Balance the dataset (DOWNSAMPLING)
+            balanced_data = pd.DataFrame()
+            minority_size = data["genre_label"].value_counts().min()
+            for label in data["genre_label"].unique():
+                label_data = data[data["genre_label"] == label]
+                if len(label_data) > minority_size:
+                    label_data = resample(
+                        label_data,
+                        replace=False,
+                        n_samples=minority_size,
+                        random_state=42,
+                    )
+                balanced_data = pd.concat([balanced_data, label_data])
 
         # Print distribution of genres
-        print("Distribution of genres after balancing:")
+        print("Distribution of genres:")
         print(balanced_data["genre_label"].value_counts())
 
         # Print head of the data
-        print("Head of the data after balancing:")
+        print("Head of the data:")
         print(balanced_data.head())
 
         # Split the balanced dataset into train, validation, and test sets
@@ -120,6 +136,9 @@ class ImageClassifier:
         )
 
     def build_model(self):
+        """
+        Build the CNN model for image classification.
+        """
         base_model = VGG16(
             weights="imagenet",
             include_top=False,
@@ -144,39 +163,18 @@ class ImageClassifier:
         self.model.build()
         self.model.summary()
         self.model.compile(
-            optimizer=Adam(learning_rate=0.00005),
+            optimizer=Adam(learning_rate=self.learning_rate),
             loss="categorical_crossentropy",
             metrics=["accuracy"],
         )
 
-    # def build_CNN(self):
-
-    #     hand_made_model = Sequential()
-    #     hand_made_model.add(Rescaling(1.0 / 255, input_shape=(150, 150, 3)))
-
-    #     hand_made_model.add(Conv2D(16, kernel_size=10, activation="relu"))
-    #     hand_made_model.add(MaxPooling2D(3))
-
-    #     hand_made_model.add(Conv2D(32, kernel_size=8, activation="relu"))
-    #     hand_made_model.add(MaxPooling2D(2))
-
-    #     hand_made_model.add(Conv2D(32, kernel_size=6, activation="relu"))
-    #     hand_made_model.add(MaxPooling2D(2))
-
-    #     hand_made_model.add(Flatten())
-    #     hand_made_model.add(Dense(50, activation="relu"))
-    #     hand_made_model.add(Dense(20, activation="relu"))
-    #     hand_made_model.add(Dense(5, activation="softmax"))
-
-    #     self.model = hand_made_model
-
-    #     self.model.compile(
-    #         optimizer=Adam(learning_rate=0.00005),
-    #         loss="categorical_crossentropy",
-    #         metrics=["accuracy"],
-    #     )
-
     def train(self, epochs=50):
+        """
+        Train the CNN model on the training data.
+
+        Args:
+            epochs (int): Number of epochs for training.
+        """
         checkpoint_path = f"{self.results_dir}/best_model.keras"
         checkpoint_callback = ModelCheckpoint(checkpoint_path, save_best_only=True)
 
@@ -203,9 +201,10 @@ class ImageClassifier:
         plt.close()
 
     def evaluate(self):
+        """
+        Evaluate the trained model on the test data and generate evaluation metrics.
+        """
         test_loss, test_accuracy = self.model.evaluate(self.test_generator)
-
-        # Get class labels
         class_labels = list(self.train_generator.class_indices.keys())
 
         # Predict test data
@@ -237,7 +236,6 @@ class ImageClassifier:
 
 
 def main(args):
-    # Determine the results directory name
     results_dir = "results"
     count = 1
     while os.path.exists(results_dir):
