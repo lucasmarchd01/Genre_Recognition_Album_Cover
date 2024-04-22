@@ -11,9 +11,10 @@ import argparse
 
 import tensorflow as tf
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.layers.experimental.preprocessing import Rescaling
 from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Dropout, Flatten
+from tensorflow.keras.layers import Dense, Dropout, Flatten, Cov2D, MaxPoolong2D
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
 
@@ -80,8 +81,6 @@ class ImageClassifier:
             batch_size=self.batch_size,
             class_mode="categorical",
         )
-        print(self.train_generator)
-        print(pd.DataFrame(self.train_generator).value_counts())
 
         val_datagen = ImageDataGenerator(rescale=1.0 / 255)
         self.val_generator = val_datagen.flow_from_dataframe(
@@ -120,15 +119,42 @@ class ImageClassifier:
             [
                 base_model,
                 Flatten(),
-                Dense(4096, activation="relu"),
+                Dense(2048, activation="relu"),
                 Dropout(0.5),
-                Dense(1072, activation="relu"),
+                Dense(1024, activation="relu"),
                 Dropout(0.5),
                 Dense(len(self.train_generator.class_indices), activation="softmax"),
             ]
         )
 
         self.model.summary()
+
+        self.model.compile(
+            optimizer=Adam(learning_rate=0.00005),
+            loss="categorical_crossentropy",
+            metrics=["accuracy"],
+        )
+
+    def build_CNN(self):
+
+        hand_made_model = Sequential()
+        hand_made_model.add(Rescaling(1.0 / 255, input_shape=(150, 150, 3)))
+
+        hand_made_model.add(Conv2D(16, kernel_size=10, activation="relu"))
+        hand_made_model.add(MaxPooling2D(3))
+
+        hand_made_model.add(Conv2D(32, kernel_size=8, activation="relu"))
+        hand_made_model.add(MaxPooling2D(2))
+
+        hand_made_model.add(Conv2D(32, kernel_size=6, activation="relu"))
+        hand_made_model.add(MaxPooling2D(2))
+
+        hand_made_model.add(Flatten())
+        hand_made_model.add(Dense(50, activation="relu"))
+        hand_made_model.add(Dense(20, activation="relu"))
+        hand_made_model.add(Dense(5, activation="softmax"))
+
+        self.model = hand_made_model
 
         self.model.compile(
             optimizer=Adam(learning_rate=0.00005),
