@@ -48,32 +48,21 @@ def filter_most_frequent_genres(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame: DataFrame with only the most frequent 5 genres for each entry.
     """
-    # Split the genre labels into separate columns
     genre_columns = df["genre_label"].str.split("/", expand=True)
-
-    # Stack the genre columns to a single column and count the occurrences
     genre_counts = genre_columns.stack().value_counts()
-
-    # Select the top 5 most frequent genres
     top_5_genres = genre_counts.head(7).index.tolist()
-
-    # Filter the genre columns to keep only the top 5 most frequent genres
     filtered_genre_columns = genre_columns.apply(
         lambda row: row[row.isin(top_5_genres)], axis=1
     )
-
-    # Join the top 5 most frequent genres back into a single column
     df["genre_label"] = filtered_genre_columns.apply(
         lambda row: "/".join(row.dropna()), axis=1
     )
-
-    # Remove rows where all genre labels have been removed
     df = df[df["genre_label"] != ""]
 
     return df
 
 
-def add_tilde_slash(image_csv, new_image_csv):
+def remove_tilde_slash(image_csv, new_image_csv):
     with open(image_csv, "r") as file:
         reader = csv.reader(file)
         data = list(reader)
@@ -86,22 +75,16 @@ def add_tilde_slash(image_csv, new_image_csv):
         writer.writerows(data)
 
 
-# Example usage:
-original_image_csv = "$SLURM_TMPDIR/data/data/csv/final_top_6.csv"
-new_image_csv = "$SLURM_TMPDIR/data/data/csv/final_top_6.csv"
-add_tilde_slash(original_image_csv, new_image_csv)
+original_dataframe = pd.read_csv(
+    "acousticbrainz-mediaeval-allmusic-train.tsv",
+    sep="\t",
+)
+mapped_dataframe = map_labels_to_mbid("mbid_to_image_filenames.csv", original_dataframe)
+
+output_filename = "mapped_mbid_with_labels.csv"
+mapped_dataframe.to_csv(output_filename, index=False)
 
 
-# original_dataframe = pd.read_csv(
-#     "/Users/lucasmarch/Projects/AcousticBrainz/acousticbrainz-mediaeval-allmusic-train.tsv",
-#     sep="\t",
-# )
-# mapped_dataframe = map_labels_to_mbid("mbid_to_image_filenames.csv", original_dataframe)
-
-# output_filename = "mapped_mbid_with_labels.csv"
-# mapped_dataframe.to_csv(output_filename, index=False)
-
-
-# mapped_dataframe = pd.read_csv("data/csv/final.csv")
-# filtered_dataframe = filter_most_frequent_genres(mapped_dataframe)
-# filtered_dataframe.to_csv("data/csv/final_top_6.csv", index=False)
+mapped_dataframe = pd.read_csv("data/csv/mapped_mbid_with_labels.csv")
+filtered_dataframe = filter_most_frequent_genres(mapped_dataframe)
+filtered_dataframe.to_csv("data/csv/final_top_6.csv", index=False)
