@@ -46,7 +46,7 @@ Train the model:
 
 `python train.py <directory-path>`
 
-Replace <tsv-filename> with the path to the TSV file containing MBIDs, and <directory-path> with the path to the directory containing the dataset (`./` in this case).
+Replace `<tsv-filename>` with the path to the TSV file containing MBIDs, and `<directory-path>` with the path to the directory containing the dataset (`./` in this case).
 
 ### Running on Digital Research Alliance of Canada (GPU)
 
