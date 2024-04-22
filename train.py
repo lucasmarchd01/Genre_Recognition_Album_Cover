@@ -172,7 +172,7 @@ class ImageClassifier:
             metrics=["accuracy"],
         )
 
-    def train(self, epochs=3):
+    def train(self, epochs=50):
         """
         Train the CNN model on the training data.
 
