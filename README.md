@@ -67,7 +67,7 @@ Replace <tsv-filename> with the path to the TSV file containing MBIDs, and <dire
 
 `sbatch genre-recognition.sh --gres=gpu:1 --cpus-per-task=6 --mem=32000M --time=6:00:00`
 
-Directory Structure:
+## Directory Structure
 ```
 .
 ├── data
