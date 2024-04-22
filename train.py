@@ -15,7 +15,11 @@ from tensorflow.keras.applications import VGG16
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Dropout, Flatten, Input
 from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.callbacks import EarlyStopping, ModelCheckpoint
+from tensorflow.keras.callbacks import (
+    EarlyStopping,
+    ModelCheckpoint,
+    LearningRateScheduler,
+)
 
 
 class ImageClassifier:
@@ -168,7 +172,7 @@ class ImageClassifier:
             metrics=["accuracy"],
         )
 
-    def train(self, epochs=50):
+    def train(self, epochs=3):
         """
         Train the CNN model on the training data.
 
@@ -177,6 +181,9 @@ class ImageClassifier:
         """
         checkpoint_path = f"{self.results_dir}/best_model.keras"
         checkpoint_callback = ModelCheckpoint(checkpoint_path, save_best_only=True)
+        early_stopping = EarlyStopping(
+            patience=10, restore_best_weights=True, verbose=2
+        )
 
         history = self.model.fit(
             self.train_generator,
@@ -185,10 +192,10 @@ class ImageClassifier:
             validation_data=self.val_generator,
             validation_steps=self.val_generator.n // self.batch_size,
             callbacks=[
-                EarlyStopping(patience=10, restore_best_weights=True, verbose=1),
+                early_stopping,
                 checkpoint_callback,
             ],
-            verbose=1,
+            verbose=2,
         )
 
         # Save training and validation accuracy plots
@@ -198,6 +205,15 @@ class ImageClassifier:
         plt.ylabel("Accuracy")
         plt.legend()
         plt.savefig(f"{self.results_dir}/training_validation_accuracy.png")
+        plt.close()
+
+        # Save training and validation loss plots
+        plt.plot(history.history["loss"], label="Training Loss")
+        plt.plot(history.history["val_loss"], label="Validation Loss")
+        plt.xlabel("Epochs")
+        plt.ylabel("Loss")
+        plt.legend()
+        plt.savefig(f"{self.results_dir}/training_validation_loss.png")
         plt.close()
 
     def evaluate(self):
