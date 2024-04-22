@@ -21,8 +21,8 @@ The project consists of three main components:
 
 - Clone the repository:
 ```
-git clone <repository-url>
-cd <repository-name>
+git clone https://github.com/lucasmarchd01/Genre_Recognition_Album_Cover.git
+cd Genre_Recognition_Album_Cover
 ```
 - Create a conda environment:
 `conda create -n "myenv" python=3.10` (or use your preffered virtual environment)
