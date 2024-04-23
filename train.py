@@ -18,7 +18,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.callbacks import (
     EarlyStopping,
     ModelCheckpoint,
-    LearningRateScheduler,
+    ReduceLROnPlateau,
 )
 
 
@@ -36,7 +36,7 @@ class ImageClassifier:
         self.img_width = img_width
         self.img_height = img_height
         self.batch_size = batch_size
-        self.learning_rate = 0.00005
+        self.learning_rate = 0.001
         self.balance_type: str = "downsampling"  # "downsampling", "upsampling" or None
         self.train_generator = None
         self.val_generator = None
@@ -184,6 +184,9 @@ class ImageClassifier:
         early_stopping = EarlyStopping(
             patience=10, restore_best_weights=True, verbose=2
         )
+        reduce_lr = ReduceLROnPlateau(
+            monitor="val_loss", factor=0.1, patience=5, min_lr=1e-6, verbose=1
+        )
 
         history = self.model.fit(
             self.train_generator,
@@ -191,10 +194,7 @@ class ImageClassifier:
             epochs=epochs,
             validation_data=self.val_generator,
             validation_steps=self.val_generator.n // self.batch_size,
-            callbacks=[
-                early_stopping,
-                checkpoint_callback,
-            ],
+            callbacks=[early_stopping, checkpoint_callback, reduce_lr],
             verbose=2,
         )
 
