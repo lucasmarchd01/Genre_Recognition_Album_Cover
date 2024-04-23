@@ -50,6 +50,9 @@ Replace `<tsv-filename>` with the path to the TSV file containing MBIDs, and `<d
 
 ### Running on Digital Research Alliance of Canada (GPU)
 
+- Archive the dataset (the `/data` directory):
+`$ tar cf mydataset.tar data/*`
+
 - Load modules required by TensorFlow:
 
 `[name@server ~]$ module load python/3.10 cuda/12.2 cudnn/8.9.5.29`
