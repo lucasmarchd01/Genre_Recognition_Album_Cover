@@ -1,6 +1,6 @@
 # Music Genre Classification using Album Covers
 
-This project aims to classify music genres using album cover images. The classification is based on deep learning techniques, specifically convolutional neural networks (CNNs), trained on a dataset of album cover images associated with different music genres. The dataset is generated from the [The AcousticBrainz Genre Dataset](https://mtg.github.io/acousticbrainz-genre-dataset/).
+This project aims to classify music genres using album cover images. The classification is based on deep learning techniques, specifically convolutional neural networks (CNNs), trained on a dataset of album cover images associated with different music genres collected from AllMusic genre tags. The dataset is generated from the [The AcousticBrainz Genre Dataset](https://mtg.github.io/acousticbrainz-genre-dataset/).
 
 ## Overview
 
