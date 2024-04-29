@@ -250,6 +250,40 @@ class ImageClassifier:
             f.write(f"Classification Report:\n{report}\n")
             f.write(f"Confusion Matrix:\n{cm}\n")
 
+    def evaluate_train(self):
+        """
+        Evaluate the trained model on the test data and generate evaluation metrics.
+        """
+        train_loss, train_accuracy = self.model.evaluate(self.train_generator)
+        class_labels = list(self.train_generator.class_indices.keys())
+
+        # Predict test data
+        y_pred = np.argmax(self.model.predict(self.train_generator), axis=1)
+        y_true = self.train_generator.classes
+
+        # Compute confusion matrix
+        cm = confusion_matrix(y_true, y_pred)
+
+        # Plot confusion matrix
+        plt.figure(figsize=(10, 8))
+        sns.heatmap(cm, annot=True, cmap="Blues", fmt="g")
+        plt.xlabel("Predicted labels")
+        plt.ylabel("True labels")
+        plt.title("Confusion Matrix")
+        plt.xticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
+        plt.yticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
+        plt.savefig(f"{self.results_dir}/confusion_matrix_training.png")
+        plt.close()
+
+        # Compute and print classification report
+        report = classification_report(y_true, y_pred, target_names=class_labels)
+
+        # Save results to a text file
+        with open(f"{self.results_dir}/results.txt", "w") as f:
+            f.write(f"Test Loss: {train_loss}, Test Accuracy: {train_accuracy}\n")
+            f.write(f"Classification Report:\n{report}\n")
+            f.write(f"Confusion Matrix:\n{cm}\n")
+
 
 def main(args):
     results_dir = "results"
@@ -264,7 +298,7 @@ def main(args):
     classifier.load_data(args.directory)
     classifier.build_model()
     classifier.train()
-    classifier.evaluate()
+    classifier.evaluate_train()
 
 
 if __name__ == "__main__":
