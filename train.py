@@ -20,6 +20,7 @@ from tensorflow.keras.callbacks import (
     ModelCheckpoint,
     ReduceLROnPlateau,
 )
+from tensorflow.keras.models import load_model
 
 
 class ImageClassifier:
@@ -285,6 +286,66 @@ class ImageClassifier:
             f.write(f"Confusion Matrix:\n{cm}\n")
 
 
+def evaluate_saved_model(model_file, data_generator, results_dir, dataset_type="test"):
+    """
+    Load a saved model and evaluate it on the specified dataset.
+
+    Args:
+        model_file (str): Path to the saved model file.
+        data_generator (ImageDataGenerator): Data generator for the dataset.
+        results_dir (str): Directory to save evaluation results.
+        dataset_type (str): Type of dataset to evaluate on, either 'train' or 'test'.
+
+    Returns:
+        None
+    """
+    # Load the saved model
+    model = load_model(model_file)
+
+    # Evaluate the model on the specified dataset
+    if dataset_type == "train":
+        data_generator.reset()
+        loss, accuracy = model.evaluate(data_generator)
+        dataset_name = "Training"
+    elif dataset_type == "test":
+        data_generator.reset()
+        loss, accuracy = model.evaluate(data_generator)
+        dataset_name = "Testing"
+    else:
+        raise ValueError("Invalid dataset type. Choose either 'train' or 'test'.")
+
+    # Get class labels
+    class_labels = list(data_generator.class_indices.keys())
+
+    # Predict data
+    predictions = model.predict(data_generator)
+    y_pred = np.argmax(predictions, axis=1)
+    y_true = data_generator.classes
+
+    # Compute confusion matrix
+    cm = confusion_matrix(y_true, y_pred)
+
+    # Plot confusion matrix
+    plt.figure(figsize=(10, 8))
+    sns.heatmap(cm, annot=True, cmap="Blues", fmt="g")
+    plt.xlabel("Predicted labels")
+    plt.ylabel("True labels")
+    plt.title(f"{dataset_name} Confusion Matrix")
+    plt.xticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
+    plt.yticks(ticks=np.arange(len(class_labels)) + 0.5, labels=class_labels)
+    plt.savefig(f"{results_dir}/{dataset_type}_confusion_matrix.png")
+    plt.close()
+
+    # Compute and print classification report
+    report = classification_report(y_true, y_pred, target_names=class_labels)
+
+    # Save results to a text file
+    with open(f"{results_dir}/{dataset_type}_results.txt", "w") as f:
+        f.write(f"{dataset_name} Loss: {loss}, {dataset_name} Accuracy: {accuracy}\n")
+        f.write(f"Classification Report:\n{report}\n")
+        f.write(f"Confusion Matrix:\n{cm}\n")
+
+
 def main(args):
     results_dir = "results"
     count = 1
@@ -298,7 +359,12 @@ def main(args):
     classifier.load_data(args.directory)
     classifier.build_model()
     classifier.train()
-    classifier.evaluate_train()
+    classifier.evaluate()
+
+    model_file = f"{results_dir}/best_model.keras"
+    evaluate_saved_model(
+        model_file, classifier.train_generator, results_dir, dataset_type="train"
+    )
 
 
 if __name__ == "__main__":
