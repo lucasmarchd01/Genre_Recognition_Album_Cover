@@ -150,8 +150,8 @@ class ImageClassifier:
             input_shape=(self.img_width, self.img_height, 3),
         )
 
-        # for layer in base_model.layers:
-        #     layer.trainable = False
+        for layer in base_model.layers:
+            layer.trainable = False
         base_model.summary()
         self.model = Sequential(
             [
