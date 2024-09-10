@@ -5,4 +5,3 @@
 /results_*
 /results/*.keras
 .DS_Store
-data_exploration.ipynb
