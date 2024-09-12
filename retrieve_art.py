@@ -27,7 +27,7 @@ class Art:
         self.release: str = ""
         self.image_locations: Dict = {}
 
-    def download(self):
+    def download(self, img_dir: str):
         """
         Download front cover images for the release group.
 
@@ -44,7 +44,7 @@ class Art:
                     try:
                         response = requests.get(smallest_size_url)
                         if response.status_code == 200:
-                            filepath = f"data/images/{filename}"
+                            filepath = f"{img_dir}/{filename}"
                             with open(filepath, "wb") as f:
                                 f.write(response.content)
                             self.store_image_location(filepath)
@@ -125,7 +125,7 @@ def read_tsv(filename: str) -> pd.DataFrame:
     return None
 
 
-def get_art_from_tsv(filename: str) -> List[Art]:
+def get_art_from_tsv(filename: str, img_dir: str) -> List[Art]:
     """
     Retrieve cover art information from a TSV file.
 
@@ -151,7 +151,7 @@ def get_art_from_tsv(filename: str) -> List[Art]:
             art = Art()
             art.mbid = mbid
             art.get_response(f"https://coverartarchive.org/release-group/{art.mbid}")
-            art.download()
+            art.download(img_dir)
             art_objects.append(art)
             count += 1
             if count % 100 == 0:
@@ -160,7 +160,7 @@ def get_art_from_tsv(filename: str) -> List[Art]:
                 )
     except KeyboardInterrupt:
         logging.info("KeyboardInterrupt received. Saving collected data...")
-        store_to_csv(art_objects, "data/csv/output_interrupted.csv")
+        store_to_csv(art_objects, f"{img_dir}/output_interrupted.csv")
         logging.info("Collected data saved.")
         raise  # Re-raise KeyboardInterrupt to exit gracefully
 
@@ -168,7 +168,8 @@ def get_art_from_tsv(filename: str) -> List[Art]:
 
 
 def store_to_csv(
-    art_objects: List[Art], output_filename: str = "mbid_to_image_filenames.csv"
+    art_objects: List[Art],
+    output_filename: str = "mbid_to_image_filenames_discogs.csv",
 ) -> None:
     """
     Store MBID and image location mappings to a CSV file.
@@ -190,9 +191,20 @@ def store_to_csv(
 def main():
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("filename")
-    parser.add_argument("-d", "--download", action="store_true")
-    parser.add_argument("-o", "--output")
+    parser.add_argument("filename", help="Path to the input TSV file")
+    parser.add_argument(
+        "-d",
+        "--download",
+        action="store_true",
+        help="Flag to enable downloading images",
+    )
+    parser.add_argument("-o", "--output", help="Output CSV filename")
+    parser.add_argument(
+        "--image-dir", default="data/images", help="Directory to save images"
+    )
+    parser.add_argument(
+        "--csv-dir", default="data/csv", help="Directory to save CSV files"
+    )
     args = parser.parse_args()
 
     os.makedirs("logs", exist_ok=True)
@@ -205,15 +217,19 @@ def main():
     )
     logging.info("Started")
 
-    os.makedirs("data", exist_ok=True)
-    os.makedirs("data/images", exist_ok=True)
-    os.makedirs("data/csv", exist_ok=True)
+    os.makedirs(args.image_dir, exist_ok=True)
+    os.makedirs(args.csv_dir, exist_ok=True)
 
-    art_objects = get_art_from_tsv(args.filename)
+    art_objects = get_art_from_tsv(args.filename, args.image_dir)
+
     if args.output:
-        store_to_csv(art_objects, args.output)
+        output_path = os.path.join(args.csv_dir, args.output)
+        store_to_csv(art_objects, output_path)
     else:
-        store_to_csv(art_objects)
+        output_path = os.path.join(args.csv_dir, "output.csv")
+        store_to_csv(art_objects, output_path)
+
+    logging.info("Finished")
 
 
 if __name__ == "__main__":
