@@ -37,21 +37,24 @@ def map_labels_to_mbid(csv_filename: str, original_dataframe: pd.DataFrame) -> p
     return merged_df
 
 
-def filter_most_frequent_genres(df: pd.DataFrame) -> pd.DataFrame:
+def filter_most_frequent_genres(df: pd.DataFrame, top_n: int = 5) -> pd.DataFrame:
     """
-    Filter DataFrame to keep only the most frequent 5 genres for each entry.
+    Filter DataFrame to keep only the most frequent 'n' genres for each entry.
 
     Args:
         df (pd.DataFrame): DataFrame containing genre labels.
+        top_n (int): The number of most frequent genres to keep.
 
     Returns:
-        pd.DataFrame: DataFrame with only the most frequent 5 genres for each entry.
+        pd.DataFrame: DataFrame with only the most frequent 'n' genres for each entry.
     """
     genre_columns = df["genre_label"].str.split("/", expand=True)
     genre_counts = genre_columns.stack().value_counts()
-    top_5_genres = genre_counts.head(7).index.tolist()
+    print(genre_counts)
+    top_genres = genre_counts.head(top_n).index.tolist()
+    print(top_genres)
     filtered_genre_columns = genre_columns.apply(
-        lambda row: row[row.isin(top_5_genres)], axis=1
+        lambda row: row[row.isin(top_genres)], axis=1
     )
     df["genre_label"] = filtered_genre_columns.apply(
         lambda row: "/".join(row.dropna()), axis=1
