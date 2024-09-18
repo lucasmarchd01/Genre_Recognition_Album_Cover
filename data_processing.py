@@ -1,10 +1,9 @@
 import pandas as pd
 import csv
+import argparse
 
 
-def map_labels_to_mbid(
-    csv_filename: str, original_dataframe: pd.DataFrame
-) -> pd.DataFrame:
+def map_labels_to_mbid(csv_filename: str, original_dataframe: pd.DataFrame) -> pd.DataFrame:
     """
     Map genre labels to MBIDs from the generated CSV file.
 
@@ -75,16 +74,32 @@ def remove_tilde_slash(image_csv, new_image_csv):
         writer.writerows(data)
 
 
-original_dataframe = pd.read_csv(
-    "acousticbrainz-mediaeval-allmusic-train.tsv",
-    sep="\t",
-)
-mapped_dataframe = map_labels_to_mbid("mbid_to_image_filenames.csv", original_dataframe)
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Process genre labels and MBID-image mappings.")
+    parser.add_argument(
+        "--original_tsv", required=True, help="Path to the original TSV file with genre labels."
+    )
+    parser.add_argument(
+        "--mbid_csv", required=True, help="Path to the CSV file with MBID-image location mappings."
+    )
+    parser.add_argument(
+        "--output_csv", required=True, help="Path to the output CSV file for mapped MBIDs and labels."
+    )
+    parser.add_argument(
+        "--filtered_csv", required=True, help="Path to the output CSV file for filtered genres."
+    )
 
-output_filename = "mapped_mbid_with_labels.csv"
-mapped_dataframe.to_csv(output_filename, index=False)
+    args = parser.parse_args()
 
+    # Read the original dataframe
+    original_dataframe = pd.read_csv(args.original_tsv, sep="\t")
 
-mapped_dataframe = pd.read_csv("data/csv/mapped_mbid_with_labels.csv")
-filtered_dataframe = filter_most_frequent_genres(mapped_dataframe)
-filtered_dataframe.to_csv("data/csv/final_top_6.csv", index=False)
+    # Map labels to MBID
+    mapped_dataframe = map_labels_to_mbid(args.mbid_csv, original_dataframe)
+    if mapped_dataframe is not None:
+        mapped_dataframe.to_csv(args.output_csv, index=False)
+
+        # Filter most frequent genres
+        filtered_dataframe = pd.read_csv(args.output_csv)
+        filtered_dataframe = filter_most_frequent_genres(filtered_dataframe)
+        filtered_dataframe.to_csv(args.filtered_csv, index=False)
