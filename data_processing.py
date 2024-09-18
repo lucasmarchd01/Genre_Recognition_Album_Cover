@@ -50,9 +50,7 @@ def filter_most_frequent_genres(df: pd.DataFrame, top_n: int = 5) -> pd.DataFram
     """
     genre_columns = df["genre_label"].str.split("/", expand=True)
     genre_counts = genre_columns.stack().value_counts()
-    print(genre_counts)
     top_genres = genre_counts.head(top_n).index.tolist()
-    print(top_genres)
     filtered_genre_columns = genre_columns.apply(
         lambda row: row[row.isin(top_genres)], axis=1
     )
