@@ -116,3 +116,5 @@ Bogdanov, D., Porter A., Schreiber H., Urbano J., & Oramas S. (2019).
 The AcousticBrainz Genre Dataset: Multi-Source, Multi-Level, Multi-Label, and Large-Scale. 
 20th International Society for Music Information Retrieval Conference (ISMIR 2019).
 ```
+
+![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=anuraghazra&hide=jupyter%20notebook)
