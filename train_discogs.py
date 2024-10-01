@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import math
 import os
 import argparse
 import tensorflow as tf
@@ -30,6 +31,7 @@ class ImageClassifier:
         self.val_dataset = None
         self.test_dataset = None
         self.model = None
+        self.class_names = []
 
     def _prepare_dataset(self, data):
         """
@@ -41,8 +43,59 @@ class ImageClassifier:
         Returns:
             tf.data.Dataset: Prepared dataset.
         """
+        # Keep only the image location and genre label columns
+        data = data[["image_location", "genre_label"]]
 
-        # Balance the dataset
+        def load_image_and_label(image_location, label):
+            img = tf.io.read_file(image_location)
+            img = tf.image.decode_jpeg(img, channels=3)
+            img = tf.image.convert_image_dtype(img, tf.float32)
+            img = tf.image.resize(img, [self.img_width, self.img_height])
+            return img, label
+
+        # Create TensorFlow dataset from image paths and labels
+        dataset = tf.data.Dataset.from_tensor_slices(
+            (
+                data["image_location"].values,
+                data["genre_label"].values,
+            )
+        )
+
+        # Apply image processing function
+        dataset = dataset.map(load_image_and_label, num_parallel_calls=tf.data.AUTOTUNE)
+
+        # Shuffle, batch, and prefetch the dataset
+        dataset = dataset.shuffle(buffer_size=len(data))
+        dataset = dataset.batch(self.batch_size)
+        dataset = dataset.prefetch(tf.data.AUTOTUNE)
+
+        return dataset
+
+    def load_data(self, full_csv, directory, val_size=0.15, test_size=0.15):
+        """
+        Load training, validation, and test data from a full CSV file.
+
+        Args:
+            full_csv (str): Path to the full CSV file.
+            directory (str): Base directory for image files.
+            val_size (float): Proportion of data to use for validation.
+            test_size (float): Proportion of data to use for testing.
+        """
+        data = pd.read_csv(full_csv)
+        data["image_location"] = data["image_location"].apply(
+            lambda x: os.path.join(directory, x)
+        )
+
+        # Compute class names from the full dataset before balancing and splitting
+        self.class_names = data["genre_label"].unique().tolist()
+        print(f"Class names: {self.class_names}")
+        label_to_index = {label: i for i, label in enumerate(self.class_names)}
+        print(f"Label to index: {label_to_index}")
+
+        # Convert genre labels to numeric indices for the entire dataset
+        data["genre_label"] = data["genre_label"].map(label_to_index)
+
+        # Balance the dataset before splitting
         if self.balance_type == "upsampling":
             # Balance the dataset (UPSAMPLING)
             balanced_data = pd.DataFrame()
@@ -78,64 +131,14 @@ class ImageClassifier:
         else:
             balanced_data = data
 
-        # Shuffle the dataset
+        # Shuffle the balanced dataset
         balanced_data = balanced_data.sample(frac=1, random_state=42).reset_index(
             drop=True
         )
 
-        # Remove unnecessary columns and keep only the image location and genre label
-        balanced_data = balanced_data[["image_location", "genre_label"]]
-
-        # Store the class names in the classifier
-        self.class_names = balanced_data["genre_label"].unique().tolist()
-        label_to_index = {label: i for i, label in enumerate(self.class_names)}
-
-        # Convert genre labels to numeric indices
-        balanced_data["genre_label"] = balanced_data["genre_label"].map(label_to_index)
-
-        def load_image_and_label(image_location, label):
-            img = tf.io.read_file(image_location)
-            img = tf.image.decode_jpeg(img, channels=3)
-            img = tf.image.convert_image_dtype(img, tf.float32)
-            img = tf.image.resize(img, [self.img_width, self.img_height])
-            return img, label
-
-        # Create TensorFlow dataset from image paths and labels
-        dataset = tf.data.Dataset.from_tensor_slices(
-            (
-                balanced_data["image_location"].values,
-                balanced_data["genre_label"].values,
-            )
-        )
-
-        # Apply image processing function
-        dataset = dataset.map(load_image_and_label, num_parallel_calls=tf.data.AUTOTUNE)
-
-        # Shuffle, batch, and prefetch the dataset
-        dataset = dataset.shuffle(buffer_size=len(balanced_data))
-        dataset = dataset.batch(self.batch_size)
-        dataset = dataset.prefetch(tf.data.AUTOTUNE)
-
-        return dataset
-
-    def load_data(self, full_csv, directory, val_size=0.2, test_size=0.1):
-        """
-        Load training, validation, and test data from a full CSV file.
-
-        Args:
-            full_csv (str): Path to the full CSV file.
-            directory (str): Base directory for image files.
-            val_size (float): Proportion of data to use for validation.
-            test_size (float): Proportion of data to use for testing.
-        """
-        data = pd.read_csv(full_csv)
-        data["image_location"] = data["image_location"].apply(
-            lambda x: os.path.join(directory, x)
-        )
-
         # Split the data into training, validation, and test sets
         train_data, temp_data = train_test_split(
-            data, test_size=(val_size + test_size), random_state=42
+            balanced_data, test_size=(val_size + test_size), random_state=42
         )
         val_data, test_data = train_test_split(
             temp_data, test_size=test_size / (val_size + test_size), random_state=42
@@ -146,7 +149,18 @@ class ImageClassifier:
         print(f"Found {len(val_data)} images for validation.")
         print(f"Found {len(test_data)} images for testing.")
 
-        # Prepare the datasets
+        # Print the distribution of classes in each set
+        print(
+            f"Training set class distribution:\n{train_data['genre_label'].value_counts()}"
+        )
+        print(
+            f"Validation set class distribution:\n{val_data['genre_label'].value_counts()}"
+        )
+        print(
+            f"Test set class distribution:\n{test_data['genre_label'].value_counts()}"
+        )
+
+        # Prepare datasets
         self.train_dataset = self._prepare_dataset(train_data)
         self.val_dataset = self._prepare_dataset(val_data)
         self.test_dataset = self._prepare_dataset(test_data)
@@ -202,8 +216,28 @@ class ImageClassifier:
         ]
 
         # Calculate steps per epoch
-        steps_per_epoch = tf.data.experimental.cardinality(self.train_dataset).numpy()
-        validation_steps = tf.data.experimental.cardinality(self.val_dataset).numpy()
+        steps_per_epoch = math.ceil(
+            tf.data.experimental.cardinality(self.train_dataset).numpy()
+            // self.batch_size
+        )
+        validation_steps = math.ceil(
+            tf.data.experimental.cardinality(self.val_dataset).numpy()
+            // self.batch_size
+        )
+
+        for images, labels in self.train_dataset.take(
+            1
+        ):  # Take one batch from the dataset
+            print(f"Batch shape: {images.shape}, Labels shape: {labels.shape}")
+
+            #  visualize some images from the batch
+            plt.figure(figsize=(10, 10))
+            for i in range(min(9, len(images))):
+                plt.subplot(3, 3, i + 1)
+                plt.imshow(images[i].numpy())
+                plt.title(f"Label: {labels[i].numpy()}")
+                plt.axis("off")
+            plt.show()
 
         history = self.model.fit(
             self.train_dataset,
@@ -237,7 +271,7 @@ class ImageClassifier:
         Evaluate the trained model on the validation data and generate evaluation metrics.
         """
         test_loss, test_accuracy = self.model.evaluate(self.test_dataset)
-        class_labels = list(self.train_dataset.class_names)
+        class_labels = self.class_names
 
         y_pred = np.argmax(self.model.predict(self.test_dataset), axis=1)
         y_true = np.concatenate([y for _, y in self.test_dataset], axis=0)
