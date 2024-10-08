@@ -1,9 +1,12 @@
-import pandas as pd
-import csv
 import argparse
+import csv
+
+import pandas as pd
 
 
-def map_labels_to_mbid(csv_filename: str, original_dataframe: pd.DataFrame) -> pd.DataFrame:
+def map_labels_to_mbid(
+    csv_filename: str, original_dataframe: pd.DataFrame
+) -> pd.DataFrame:
     """
     Map genre labels to MBIDs from the generated CSV file.
 
@@ -76,18 +79,33 @@ def remove_tilde_slash(image_csv, new_image_csv):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Process genre labels and MBID-image mappings.")
-    parser.add_argument(
-        "--original_tsv", required=True, help="Path to the original TSV file with genre labels."
+    parser = argparse.ArgumentParser(
+        description="Process genre labels and MBID-image mappings."
     )
     parser.add_argument(
-        "--mbid_csv", required=True, help="Path to the CSV file with MBID-image location mappings."
+        "--original_tsv",
+        required=True,
+        help="Path to the original TSV file with genre labels.",
     )
     parser.add_argument(
-        "--output_csv", required=True, help="Path to the output CSV file for mapped MBIDs and labels."
+        "--mbid_csv",
+        required=True,
+        help="Path to the CSV file with MBID-image location mappings.",
     )
     parser.add_argument(
-        "--filtered_csv", required=True, help="Path to the output CSV file for filtered genres."
+        "--output_csv",
+        required=True,
+        help="Path to the output CSV file for mapped MBIDs and labels.",
+    )
+    parser.add_argument(
+        "--filter_n",
+        required=True,
+        help="Number of top genres to filter.",
+    )
+    parser.add_argument(
+        "--filtered_csv",
+        required=True,
+        help="Path to the output CSV file for filtered genres.",
     )
 
     args = parser.parse_args()
@@ -102,5 +120,7 @@ if __name__ == "__main__":
 
         # Filter most frequent genres
         filtered_dataframe = pd.read_csv(args.output_csv)
-        filtered_dataframe = filter_most_frequent_genres(filtered_dataframe)
+        filtered_dataframe = filter_most_frequent_genres(
+            filtered_dataframe, args.filter_n
+        )
         filtered_dataframe.to_csv(args.filtered_csv, index=False)
