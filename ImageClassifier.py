@@ -331,7 +331,7 @@ class ImageClassifier:
         ]
 
         # Fit the model
-        history = self.model.fit(
+        self.model.fit(
             self.train_dataset,
             validation_data=self.val_dataset,
             epochs=self.epochs,
