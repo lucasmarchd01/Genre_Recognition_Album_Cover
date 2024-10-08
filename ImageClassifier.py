@@ -107,7 +107,7 @@ class ImageClassifier:
 
         return dataset
 
-    def load_data(self, full_csv, val_size=0.15, test_size=0.15):
+    def load_data(self, full_csv, directory, val_size=0.15, test_size=0.15):
         """
         Load training, validation, and test data from a full CSV file.
 
@@ -118,6 +118,11 @@ class ImageClassifier:
             test_size (float): Proportion of data to use for testing.
         """
         data = pd.read_csv(full_csv)
+
+        # Adjust image locations in the CSV file
+        data["image_location"] = data["image_location"].apply(
+            lambda x: os.path.join(directory, x)
+        )
 
         # Compute class names from the full dataset before balancing and splitting
         self.class_names = data["genre_label"].unique().tolist()

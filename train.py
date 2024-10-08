@@ -70,7 +70,7 @@ def main():
     )
     classifier.results_dir = args.results_dir
     # Load training and validation data
-    classifier.load_data(args.csv_file)
+    classifier.load_data(args.csv_file, args.directory)
 
     # Build and train the model
     classifier.build_model()
