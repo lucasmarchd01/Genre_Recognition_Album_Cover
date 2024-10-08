@@ -1,14 +1,15 @@
-import pandas as pd
-import numpy as np
+import argparse
 import math
 import os
-import argparse
-import tensorflow as tf
-from sklearn.utils import resample
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import seaborn as sns
+import tensorflow as tf
+from sklearn.metrics import classification_report, confusion_matrix
+from sklearn.model_selection import train_test_split
+from sklearn.utils import resample
 
 
 class ImageClassifier:
@@ -25,7 +26,7 @@ class ImageClassifier:
         self.img_width = img_width
         self.img_height = img_height
         self.batch_size = batch_size
-        self.learning_rate = 0.001
+        self.learning_rate = 0.0001
         self.balance_type: str = "downsampling"  # "downsampling", "upsampling" or None
         self.train_dataset = None
         self.val_dataset = None
@@ -336,7 +337,7 @@ def main():
         "--img_height", type=int, default=250, help="Height of input images"
     )
     parser.add_argument(
-        "--batch_size", type=int, default=32, help="Batch size for training"
+        "--batch_size", type=int, default=8, help="Batch size for training"
     )
     parser.add_argument(
         "--epochs", type=int, default=50, help="Number of epochs for training"
