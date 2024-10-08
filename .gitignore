@@ -8,3 +8,5 @@
 /results_*
 /results/*.keras
 .DS_Store
+__pycache__/
+.vscode/
