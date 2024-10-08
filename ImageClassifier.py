@@ -107,7 +107,7 @@ class ImageClassifier:
 
         return dataset
 
-    def load_data(self, full_csv, directory, val_size=0.15, test_size=0.15):
+    def load_data(self, full_csv, val_size=0.15, test_size=0.15):
         """
         Load training, validation, and test data from a full CSV file.
 
@@ -118,9 +118,6 @@ class ImageClassifier:
             test_size (float): Proportion of data to use for testing.
         """
         data = pd.read_csv(full_csv)
-        data["image_location"] = data["image_location"].apply(
-            lambda x: os.path.join(directory, x)
-        )
 
         # Compute class names from the full dataset before balancing and splitting
         self.class_names = data["genre_label"].unique().tolist()
@@ -376,7 +373,9 @@ class ImageClassifier:
             )
         if use_tensorboard:
             log_dir = "logs/fit/"
-            callbacks.append(TensorBoardCallback(log_dir=log_dir, histogram_freq=1))
+            callbacks.append(
+                tf.keras.callbacks.Tensorboard(log_dir=log_dir, histogram_freq=1)
+            )
 
         history = self.model.fit(
             self.train_dataset,
