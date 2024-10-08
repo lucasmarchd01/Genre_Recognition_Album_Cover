@@ -17,4 +17,5 @@ mkdir $SLURM_TMPDIR/data
 tar xf ~/mydataset.tar -C $SLURM_TMPDIR/data
 
 # Start training
-python $SOURCEDIR/train.py $SLURM_TMPDIR/data/
+tensorboard --logdir=/tmp/logs --host 0.0.0.0 --load_fast false &
+python $SOURCEDIR/train.py $SLURM_TMPDIR/data/final_top_5_discogs.csv
