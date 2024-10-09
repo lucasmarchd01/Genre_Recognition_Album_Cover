@@ -338,7 +338,7 @@ class ImageClassifier:
             validation_data=self.val_dataset,
             epochs=self.epochs,
             callbacks=callbacks,
-            verbose=0,
+            verbose=10,
         )
         # Evaluate the model on the validation set
         val_loss, val_accuracy = self.model.evaluate(self.val_dataset, verbose=0)
