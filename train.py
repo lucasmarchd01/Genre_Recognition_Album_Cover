@@ -1,6 +1,7 @@
 import argparse
 import logging
 import os
+from datetime import datetime
 
 from ImageClassifier import ImageClassifier
 
@@ -50,11 +51,14 @@ def main():
 
     # Set up the logger
     os.makedirs("logs", exist_ok=True)
+    log_filename = os.path.join(
+        "logs", f"classifier_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+    )
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
         handlers=[
-            logging.FileHandler(os.path.join("logs", "classifier.log")),
+            logging.FileHandler(log_filename),
             logging.StreamHandler(),
         ],
     )
