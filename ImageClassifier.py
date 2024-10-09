@@ -1,5 +1,6 @@
 import logging
 import os
+from datetime import datetime
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -322,6 +323,7 @@ class ImageClassifier:
 
         # Define callbacks for early stopping and learning rate reduction
         checkpoint_path = os.path.join(self.results_dir, "best_model.keras")
+        log_dir = "logs/fit/" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(checkpoint_path, save_best_only=True),
             tf.keras.callbacks.EarlyStopping(
@@ -330,6 +332,7 @@ class ImageClassifier:
             tf.keras.callbacks.ReduceLROnPlateau(
                 monitor="val_loss", factor=0.1, patience=7, min_lr=1e-6, verbose=1
             ),
+            tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1),
         ]
 
         # Fit the model
@@ -338,7 +341,7 @@ class ImageClassifier:
             validation_data=self.val_dataset,
             epochs=self.epochs,
             callbacks=callbacks,
-            verbose=10,
+            verbose=1,
         )
         # Evaluate the model on the validation set
         val_loss, val_accuracy = self.model.evaluate(self.val_dataset, verbose=0)
@@ -387,7 +390,7 @@ class ImageClassifier:
             validation_data=self.val_dataset,
             epochs=self.epochs,
             callbacks=callbacks,
-            verbose=10,
+            verbose=1,
         )
 
         # Plot training history
