@@ -1,7 +1,7 @@
 import argparse
 import logging
 import os
-from datetime import datetime
+import uuid
 
 from ImageClassifier import ImageClassifier
 
@@ -13,9 +13,6 @@ def main():
     )
     parser.add_argument(
         "--directory", type=str, default="./", help="Base directory containing data"
-    )
-    parser.add_argument(
-        "--results_dir", type=str, default="results", help="Directory to save results"
     )
     parser.add_argument(
         "--img_width", type=int, default=250, help="Width of input images"
@@ -41,19 +38,15 @@ def main():
     )
 
     args = parser.parse_args()
+    ID = uuid.uuid4()
 
     # Create results directory if it does not exist
-    count = 1
-    while os.path.exists(args.results_dir):
-        args.results_dir = f"results_{count}"
-        count += 1
-    os.makedirs(args.results_dir, exist_ok=True)
+    results_dir = f"results_{ID}"
+    os.makedirs(results_dir, exist_ok=True)
 
     # Set up the logger
     os.makedirs("logs", exist_ok=True)
-    log_filename = os.path.join(
-        "logs", f"classifier_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
-    )
+    log_filename = os.path.join("logs", f"classifier_{ID}.log")
     logging.basicConfig(
         level=logging.INFO,
         format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
@@ -66,18 +59,20 @@ def main():
 
     # Initialize the image classifier
     classifier = ImageClassifier(
+        id=ID,
         img_width=args.img_width,
         img_height=args.img_height,
         batch_size=args.batch_size,
         epochs=args.epochs,
         balance_type=args.balance_type,
     )
-    classifier.results_dir = args.results_dir
+    classifier.results_dir = results_dir
     # Load training and validation data
     classifier.load_data(args.csv_file, args.directory)
 
     # Build and train the model
-    classifier.build_model()
+    # classifier.build_model()
+
     # classifier.train(use_early_stopping=False, use_reduce_lr=False)
     classifier.run_study()
 
