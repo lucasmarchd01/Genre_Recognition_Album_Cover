@@ -1,6 +1,7 @@
 import logging
 import os
-from datetime import datetime
+import random
+import uuid
 from typing import Optional
 
 import matplotlib.pyplot as plt
@@ -10,7 +11,6 @@ import pandas as pd
 import seaborn as sns
 import tensorflow as tf
 from optuna.integration.tensorboard import TensorBoardCallback
-from optuna.trial import TrialState
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 class ImageClassifier:
     def __init__(
         self,
+        id=None,
         img_width=250,
         img_height=250,
         batch_size=8,
@@ -39,6 +40,7 @@ class ImageClassifier:
             epochs (int): Number of epochs for training
             balance_type (str): Method for balancing training data.
         """
+        self.id = id if id else uuid.uuid4()
         self.results_dir: str = None
         self.img_width: int = img_width
         self.img_height: int = img_height
@@ -52,19 +54,6 @@ class ImageClassifier:
         self.test_dataset = None
         self.model = None
         self.class_names = []
-
-        logger.info(
-            "ImageClassifier initialized with parameters:\n"
-            "  Image Size: (%d, %d)\n"
-            "  Batch Size: %d\n"
-            "  Learning Rate: %.5f\n"
-            "  Balance Type: '%s'",
-            img_width,
-            img_height,
-            batch_size,
-            learning_rate,
-            balance_type,
-        )
 
     def _prepare_dataset(self, data):
         """
@@ -158,17 +147,6 @@ class ImageClassifier:
         logger.info(f"Found {len(train_data)} images for training.")
         logger.info(f"Found {len(val_data)} images for validation.")
         logger.info(f"Found {len(test_data)} images for testing.")
-
-        # Distribution of classes in each set
-        logger.info(
-            f"Training set class distribution:\n{train_data['genre_label'].value_counts()}"
-        )
-        logger.info(
-            f"Validation set class distribution:\n{val_data['genre_label'].value_counts()}"
-        )
-        logger.info(
-            f"Test set class distribution:\n{test_data['genre_label'].value_counts()}"
-        )
 
         # Prepare datasets
         self.train_dataset = self._prepare_dataset(train_data)
@@ -293,20 +271,18 @@ class ImageClassifier:
 
         Args:
             n_trials (int): Number of trials for the hyperparameter search.
+
         """
+        optuna.logging.enable_propagation()  # Propagate logs to the root logger.
+        optuna.logging.disable_default_handler()
         study = optuna.create_study(direction="maximize")
-        tensorboard_callback = TensorBoardCallback("logs/", metric_name="accuracy")
+        tensorboard_callback = TensorBoardCallback(
+            f"logs/fit/{self.id}", metric_name="accuracy"
+        )
         study.optimize(
             self.objective, n_trials=n_trials, callbacks=[tensorboard_callback]
         )
 
-        pruned_trials = study.get_trials(deepcopy=False, states=[TrialState.PRUNED])
-        complete_trials = study.get_trials(deepcopy=False, states=[TrialState.COMPLETE])
-
-        logger.info("Study statistics: ")
-        logger.info("  Number of finished trials: ", len(study.trials))
-        logger.info("  Number of pruned trials: ", len(pruned_trials))
-        logger.info("  Number of complete trials: ", len(complete_trials))
         # Print the best trial
         trial = study.best_trial
         logger.info(f"Best trial: {trial.number}")
@@ -323,7 +299,7 @@ class ImageClassifier:
 
         # Define callbacks for early stopping and learning rate reduction
         checkpoint_path = os.path.join(self.results_dir, "best_model.keras")
-        log_dir = "logs/fit/" + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_dir = f"logs/fit/{self.id}/{trial.number}"
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(checkpoint_path, save_best_only=True),
             tf.keras.callbacks.EarlyStopping(
@@ -344,13 +320,23 @@ class ImageClassifier:
             verbose=1,
         )
         # Evaluate the model on the validation set
-        val_loss, val_accuracy = self.model.evaluate(self.val_dataset, verbose=0)
+        val_loss, val_accuracy = self.model.evaluate(self.val_dataset, verbose=1)
         return val_accuracy  # Optuna maximizes accuracy
 
     def save_model(self, path) -> None:
+        """Save a keras model.
+
+        Args:
+            path (str): Path to save model.
+        """
         self.model.save(path)
 
     def load_model(self, path) -> None:
+        """Load a keras model.
+
+        Args:
+            path (str): Path to keras model.
+        """
         self.model = tf.keras.models.load_model(path)
 
     def train(
