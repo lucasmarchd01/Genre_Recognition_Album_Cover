@@ -279,7 +279,10 @@ class ImageClassifier:
             f"logs/fit/{self.id}", metric_name="accuracy"
         )
         study.optimize(
-            self.objective, n_trials=n_trials, callbacks=[tensorboard_callback]
+            self.objective,
+            n_trials=n_trials,
+            gc_after_trial=True,
+            callbacks=[tensorboard_callback],
         )
 
         # Print the best trial
