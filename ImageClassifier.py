@@ -54,6 +54,8 @@ class ImageClassifier:
         self.model = None
         self.class_names = []
 
+        logger.info(f"Image classifier initialized with ID: {self.id}")
+
     def _prepare_dataset(self, data):
         """
         Prepare a TensorFlow dataset from DataFrame.
@@ -291,6 +293,9 @@ class ImageClassifier:
         logger.info(f"Best trial params: {trial.params}")
         logger.info(f"Best trial accuracy: {trial.value}")
 
+        self.load_model(
+            os.path.join(self.results_dir, f"trial-{trial.number}_best_model.keras")
+        )
         return trial
 
     def objective(self, trial):
@@ -300,8 +305,10 @@ class ImageClassifier:
         self.build_model(trial)
 
         # Define callbacks for early stopping and learning rate reduction
-        checkpoint_path = os.path.join(self.results_dir, "best_model.keras")
-        log_dir = f"logs/fit/{self.id}/{trial.number}"
+        checkpoint_path = os.path.join(
+            self.results_dir, f"trial-{trial.number}_best_model.keras"
+        )
+        log_dir = f"logs/fit/{self.id}/trial-{trial.number}"
         callbacks = [
             tf.keras.callbacks.ModelCheckpoint(checkpoint_path, save_best_only=True),
             tf.keras.callbacks.EarlyStopping(
