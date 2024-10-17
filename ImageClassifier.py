@@ -215,9 +215,10 @@ class ImageClassifier:
         Build the CNN model for image classification with optuna integration for hyperparameters.
         """
         if trial is not None:
-            base_model_name = trial.suggest_categorical(
-                "base_model", ["VGG16", "ResNet50"]
-            )
+            # base_model_name = trial.suggest_categorical(
+            #     "base_model", ["VGG16", "ResNet50"]
+            # )
+            base_model_name = "VGG16"
         else:
             base_model_name = "VGG16"
 
@@ -242,9 +243,9 @@ class ImageClassifier:
 
         # Add dense layers
         if trial is not None:
-            num_dense_layers = trial.suggest_int("num_dense_layers", 1, 3)
-            dense_units = trial.suggest_int("dense_units", 64, 512)
-            dropout_rate = trial.suggest_float("dropout_rate", 0.3, 0.7)
+            num_dense_layers = trial.suggest_int("num_dense_layers", 1, 4)
+            dense_units = trial.suggest_int("dense_units", 64, 1024)
+            dropout_rate = trial.suggest_float("dropout_rate", 0.2, 0.8)
             learning_rate = trial.suggest_float("learning_rate", 1e-5, 1e-2, log=True)
         else:
             num_dense_layers = 2
