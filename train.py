@@ -74,7 +74,7 @@ def main():
     # classifier.build_model()
 
     # classifier.train(use_early_stopping=False, use_reduce_lr=False)
-    classifier.run_study(n_trials=15)
+    classifier.run_study(n_trials=10)
 
     # Evaluate the model
     classifier.evaluate()
