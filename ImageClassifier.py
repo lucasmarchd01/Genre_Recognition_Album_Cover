@@ -24,7 +24,7 @@ class ImageClassifier:
         img_width=250,
         img_height=250,
         batch_size=8,
-        learning_rate=0.001,
+        learning_rate=0.0001,
         epochs=50,
         balance_type="downsampling",
     ):
