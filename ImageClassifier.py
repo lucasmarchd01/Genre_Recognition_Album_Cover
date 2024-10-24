@@ -214,34 +214,39 @@ class ImageClassifier:
         """
         Build the CNN model for image classification with optuna integration for hyperparameters.
         """
+        # Define a dictionary for available base models
+        base_model_dict = {
+            "VGG16": tf.keras.applications.VGG16,
+            "ResNet50": tf.keras.applications.ResNet50,
+            "InceptionV3": tf.keras.applications.InceptionV3,
+            "Xception": tf.keras.applications.Xception,
+            "MobileNetV2": tf.keras.applications.MobileNetV2,
+        }
+
+        # Suggest base model using Optuna or default to VGG16
         if trial is not None:
-            # base_model_name = trial.suggest_categorical(
-            #     "base_model", ["VGG16", "ResNet50"]
-            # )
-            base_model_name = "VGG16"
+            base_model_name = trial.suggest_categorical(
+                "base_model", list(base_model_dict.keys())
+            )
         else:
             base_model_name = "VGG16"
 
-        if base_model_name == "VGG16":
-            base_model = tf.keras.applications.VGG16(
-                weights="imagenet",
-                include_top=False,
-                input_shape=(self.img_width, self.img_height, 3),
-            )
-        elif base_model_name == "ResNet50":
-            base_model = tf.keras.applications.ResNet50(
-                weights="imagenet",
-                include_top=False,
-                input_shape=(self.img_width, self.img_height, 3),
-            )
+        # Dynamically load the selected base model
+        base_model_class = base_model_dict[base_model_name]
+        base_model = base_model_class(
+            weights="imagenet",
+            include_top=False,
+            input_shape=(self.img_width, self.img_height, 3),
+        )
 
+        # Freeze base model layers
         for layer in base_model.layers:
             layer.trainable = False
 
-        # Hyperparameter tuning for dense layers
+        # Build the model
         model = tf.keras.Sequential([base_model, tf.keras.layers.Flatten()])
 
-        # Add dense layers
+        # Add dense layers with Optuna suggestions or default values
         if trial is not None:
             num_dense_layers = trial.suggest_int("num_dense_layers", 1, 4)
             dense_units = trial.suggest_int("dense_units", 64, 1024)
@@ -253,17 +258,21 @@ class ImageClassifier:
             dropout_rate = 0.5
             learning_rate = self.learning_rate
 
+        # Add dense layers and dropout
         for _ in range(num_dense_layers):
             model.add(tf.keras.layers.Dense(dense_units, activation="relu"))
             model.add(tf.keras.layers.Dropout(dropout_rate))
 
+        # Output layer
         model.add(tf.keras.layers.Dense(len(self.class_names), activation="softmax"))
 
+        # Compile the model
         model.compile(
             optimizer=tf.keras.optimizers.Adam(learning_rate=learning_rate),
             loss="sparse_categorical_crossentropy",
             metrics=["accuracy"],
         )
+
         self.model = model
         self.model.summary()
 
@@ -410,16 +419,33 @@ class ImageClassifier:
         """
         Evaluate the trained model on the validation data and generate evaluation metrics.
         """
+        logger.info("Starting model evaluation...")
         test_loss, test_accuracy = self.model.evaluate(self.test_dataset)
         class_labels = self.class_names
 
-        y_pred = np.argmax(self.model.predict(self.test_dataset), axis=1)
-        y_true = np.concatenate([y for _, y in self.test_dataset], axis=0)
+        y_pred = []  # store predicted labels
+        y_true = []  # store true labels
+
+        # Since we are shuffling, iterate over the dataset
+        for (
+            image_batch,
+            label_batch,
+        ) in self.test_dataset:
+            y_true.append(label_batch)
+            preds = self.model.predict(image_batch)
+            y_pred.append(np.argmax(preds, axis=-1))
+
+        # convert the true and predicted labels into tensors
+        y_true = tf.concat([item for item in y_true], axis=0)
+        y_pred = tf.concat([item for item in y_pred], axis=0)
+
+        # y_pred = np.argmax(self.model.predict(self.test_dataset), axis=1)
+        # y_true = np.concatenate([y for _, y in self.test_dataset], axis=0)
 
         cm = confusion_matrix(y_true, y_pred)
 
         plt.figure(figsize=(10, 8))
-        sns.heatmap(cm, annot=True, cmap="Blues", fmt="g")
+        sns.heatmap(cm, annot=True, fmt="g")
         plt.xlabel("Predicted labels")
         plt.ylabel("True labels")
         plt.title("Confusion Matrix")
@@ -431,9 +457,7 @@ class ImageClassifier:
         report = classification_report(y_true, y_pred, target_names=class_labels)
 
         with open(os.path.join(self.results_dir, "results.txt"), "w") as f:
-            f.write(
-                f"Validation Loss: {test_loss}, Validation Accuracy: {test_accuracy}\n"
-            )
+            f.write(f"Test Loss: {test_loss}, Test Accuracy: {test_accuracy}\n")
             f.write(f"Classification Report:\n{report}\n")
             f.write(f"Confusion Matrix:\n{cm}\n")
 
