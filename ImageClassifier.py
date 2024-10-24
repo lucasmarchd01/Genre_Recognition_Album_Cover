@@ -439,9 +439,6 @@ class ImageClassifier:
         y_true = tf.concat([item for item in y_true], axis=0)
         y_pred = tf.concat([item for item in y_pred], axis=0)
 
-        # y_pred = np.argmax(self.model.predict(self.test_dataset), axis=1)
-        # y_true = np.concatenate([y for _, y in self.test_dataset], axis=0)
-
         cm = confusion_matrix(y_true, y_pred)
 
         plt.figure(figsize=(10, 8))
