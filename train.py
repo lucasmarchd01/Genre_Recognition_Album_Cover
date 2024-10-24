@@ -24,7 +24,7 @@ def main():
         "--batch_size", type=int, default=8, help="Batch size for training"
     )
     parser.add_argument(
-        "--learning_rate", type=float, default=0.001, help="Learning rate for training"
+        "--learning_rate", type=float, default=0.0001, help="Learning rate for training"
     )
     parser.add_argument(
         "--epochs", type=int, default=50, help="Number of epochs for training"
@@ -70,11 +70,12 @@ def main():
     # Load training and validation data
     classifier.load_data(args.csv_file, args.directory)
 
-    # Build and train the model
+    # Build and train a single model (uncomment)
     # classifier.build_model()
-
     # classifier.train(use_early_stopping=False, use_reduce_lr=False)
-    classifier.run_study(n_trials=15)
+
+    # Run optuna study
+    classifier.run_study(n_trials=50)
 
     # Evaluate the model
     classifier.evaluate()
