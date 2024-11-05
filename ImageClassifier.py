@@ -214,26 +214,30 @@ class ImageClassifier:
         """
         Build the CNN model for image classification with optuna integration for hyperparameters.
         """
-        # Define a dictionary for available base models
-        base_model_dict = {
-            "VGG16": tf.keras.applications.VGG16,
-            "ResNet50": tf.keras.applications.ResNet50,
-            "InceptionV3": tf.keras.applications.InceptionV3,
-            "Xception": tf.keras.applications.Xception,
-            "MobileNetV2": tf.keras.applications.MobileNetV2,
-        }
+        ###
+        # Uncomment below if you wish to use a dynamic approach to selecting the base model
+        # and hyperparameters using Optuna.
+        ###
+        # # Define a dictionary for available base models
+        # base_model_dict = {
+        #     "VGG16": tf.keras.applications.VGG16,
+        #     "ResNet50": tf.keras.applications.ResNet50,
+        #     "InceptionV3": tf.keras.applications.InceptionV3,
+        #     "Xception": tf.keras.applications.Xception,
+        #     "MobileNetV2": tf.keras.applications.MobileNetV2,
+        # }
 
-        # Suggest base model using Optuna or default to VGG16
-        if trial is not None:
-            base_model_name = trial.suggest_categorical(
-                "base_model", list(base_model_dict.keys())
-            )
-        else:
-            base_model_name = "VGG16"
+        # # Suggest base model using Optuna or default to VGG16
+        # if trial is not None:
+        #     base_model_name = trial.suggest_categorical(
+        #         "base_model", list(base_model_dict.keys())
+        #     )
+        # else:
+        #     base_model_name = "VGG16"
 
-        # Dynamically load the selected base model
-        base_model_class = base_model_dict[base_model_name]
-        base_model = base_model_class(
+        # # Dynamically load the selected base model
+        # base_model_class = base_model_dict[base_model_name]
+        base_model = tf.keras.applications.ResNet50(
             weights="imagenet",
             include_top=False,
             input_shape=(self.img_width, self.img_height, 3),
@@ -276,7 +280,7 @@ class ImageClassifier:
         self.model = model
         self.model.summary()
 
-    def run_study(self, n_trials=50):
+    def run_study(self, n_trials=15):
         """
         Run the Optuna study for hyperparameter tuning.
 
@@ -336,7 +340,7 @@ class ImageClassifier:
             validation_data=self.val_dataset,
             epochs=self.epochs,
             callbacks=callbacks,
-            verbose=1,
+            verbose=2,
         )
         # Evaluate the model on the validation set
         val_loss, val_accuracy = self.model.evaluate(self.val_dataset, verbose=1)

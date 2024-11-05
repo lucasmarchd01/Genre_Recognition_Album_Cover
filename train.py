@@ -75,7 +75,7 @@ def main():
     # classifier.train(use_early_stopping=False, use_reduce_lr=False)
 
     # Run optuna study
-    classifier.run_study(n_trials=50)
+    classifier.run_study(n_trials=15)
 
     # Evaluate the model
     classifier.evaluate()
