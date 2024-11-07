@@ -52,7 +52,13 @@ class ImageClassifier:
         self.val_dataset = None
         self.test_dataset = None
         self.model = None
-        self.class_names = []
+        self.class_names = [
+            "electronic",
+            "rock",
+            "folk, world, & country",
+            "pop",
+            "jazz",
+        ]
 
         logger.info(f"Image classifier initialized with ID: {self.id}")
 
@@ -472,12 +478,17 @@ class ImageClassifier:
         Returns:
             str: Predicted class label.
         """
-        image = tf.io.read_file(img_path)
-        image = tf.image.decode_jpeg(image, channels=3)
-        image = tf.image.convert_image_dtype(image, tf.float32)
-        image = tf.image.resize(image, [self.img_width, self.img_height])
-        image = tf.expand_dims(image, 0)
+        try:
+            print(f"Image path: {img_path}")
+            img = tf.io.read_file(img_path)
+            img = tf.image.decode_jpeg(img, channels=3)
+            img = tf.image.convert_image_dtype(img, tf.float32)
+            img = tf.image.resize(img, [self.img_width, self.img_height])
+        except tf.errors.InvalidArgumentError as e:
+            logger.error(f"Error loading image {img_path}: {e}")
+            img = tf.zeros((self.img_width, self.img_height, 3))
+        image = tf.expand_dims(img, 0)
 
         prediction = self.model.predict(image)
-        predicted_class = self.train_dataset.class_names[np.argmax(prediction)]
+        predicted_class = self.class_names[np.argmax(prediction)]
         return predicted_class

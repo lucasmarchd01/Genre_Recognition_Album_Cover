@@ -3,7 +3,7 @@ import logging
 import os
 import uuid
 
-from ImageClassifier import ImageClassifier
+from classifier.ImageClassifier import ImageClassifier
 
 
 def main():
