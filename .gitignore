@@ -2,6 +2,7 @@
 /data/images_discogs
 /data/images_discogs_validation
 /data/archive
+/data/data_exploration.ipynb
 /logs
 /genre-recognition
 /results_*
