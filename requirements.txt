@@ -1,11 +1,14 @@
 absl-py==2.1.0
 alembic==1.13.3
 astunparse==1.6.3
+blinker==1.8.2
 certifi==2024.2.2
 charset-normalizer==3.3.2
+click==8.1.7
 colorlog==6.8.2
 contourpy==1.2.1
 cycler==0.12.1
+Flask==3.0.3
 flatbuffers==24.3.25
 fonttools==4.51.0
 gast==0.5.4
@@ -13,6 +16,8 @@ google-pasta==0.2.0
 grpcio==1.62.1
 h5py==3.11.0
 idna==3.7
+itsdangerous==2.2.0
+Jinja2==3.1.4
 joblib==1.4.0
 keras==3.5.0
 kiwisolver==1.4.5
