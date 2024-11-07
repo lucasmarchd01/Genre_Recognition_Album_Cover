@@ -1,22 +1,19 @@
-Test Loss: 1.6190606355667114, Test Accuracy: 0.3394986391067505
 Classification Report:
-               precision    recall  f1-score   support
+                        precision    recall  f1-score   support
 
-    classical       0.17      0.17      0.17      1098
-      country       0.16      0.20      0.18      1086
-   electronic       0.16      0.20      0.18      1116
-international       0.19      0.10      0.13      1078
-         jazz       0.15      0.14      0.15      1102
-     pop/rock       0.16      0.17      0.16      1062
+            electronic       0.35      0.36      0.35       968
+                  rock       0.37      0.41      0.39       979
+folk, world, & country       0.33      0.28      0.30       947
+                   pop       0.32      0.33      0.33       942
+                  jazz       0.42      0.41      0.42       990
 
-     accuracy                           0.16      6542
-    macro avg       0.16      0.16      0.16      6542
- weighted avg       0.16      0.16      0.16      6542
+              accuracy                           0.36      4826
+             macro avg       0.36      0.36      0.36      4826
+          weighted avg       0.36      0.36      0.36      4826
 
 Confusion Matrix:
-[[185 225 242  95 180 171]
- [180 214 239  84 173 196]
- [176 234 219 117 188 182]
- [175 217 215 108 163 200]
- [176 245 241  83 157 200]
- [179 212 219  96 179 177]]
+[[350 231 106 162 119]
+ [225 400 120 138  96]
+ [125 173 265 208 176]
+ [143 165 153 311 170]
+ [163 112 155 150 410]]
