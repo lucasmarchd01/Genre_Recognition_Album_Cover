@@ -40,7 +40,7 @@ class ImageClassifier:
             balance_type (str): Method for balancing training data.
         """
         self.id = id if id else uuid.uuid4()
-        self.results_dir: str = None
+        self.results_dir: str = f"results_{self.id}"
         self.img_width: int = img_width
         self.img_height: int = img_height
         self.batch_size: int = batch_size
@@ -52,6 +52,7 @@ class ImageClassifier:
         self.val_dataset = None
         self.test_dataset = None
         self.model = None
+        # These are the class names used for the discogs dataset
         self.class_names = [
             "electronic",
             "rock",
@@ -335,7 +336,7 @@ class ImageClassifier:
                 patience=20, restore_best_weights=True, verbose=2
             ),
             tf.keras.callbacks.ReduceLROnPlateau(
-                monitor="val_loss", factor=0.1, patience=7, min_lr=1e-6, verbose=1
+                monitor="val_loss", factor=0.1, patience=7, min_lr=1e-6, verbose=2
             ),
             tf.keras.callbacks.TensorBoard(log_dir=log_dir, histogram_freq=1),
         ]
@@ -349,7 +350,7 @@ class ImageClassifier:
             verbose=2,
         )
         # Evaluate the model on the validation set
-        val_loss, val_accuracy = self.model.evaluate(self.val_dataset, verbose=1)
+        val_loss, val_accuracy = self.model.evaluate(self.val_dataset, verbose=2)
         return val_accuracy  # Optuna maximizes accuracy
 
     def save_model(self, path) -> None:
@@ -391,7 +392,7 @@ class ImageClassifier:
         if use_reduce_lr:
             callbacks.append(
                 tf.keras.callbacks.ReduceLROnPlateau(
-                    monitor="val_loss", factor=0.1, patience=5, min_lr=1e-6, verbose=1
+                    monitor="val_loss", factor=0.1, patience=5, min_lr=1e-6, verbose=2
                 )
             )
         if use_tensorboard:
@@ -405,7 +406,7 @@ class ImageClassifier:
             validation_data=self.val_dataset,
             epochs=self.epochs,
             callbacks=callbacks,
-            verbose=1,
+            verbose=2,
         )
 
         # Plot training history
