@@ -244,7 +244,7 @@ class ImageClassifier:
 
         # # Dynamically load the selected base model
         # base_model_class = base_model_dict[base_model_name]
-        base_model = tf.keras.applications.InceptionV3(
+        base_model = tf.keras.applications.Xception(
             weights="imagenet",
             include_top=False,
             input_shape=(self.img_width, self.img_height, 3),
