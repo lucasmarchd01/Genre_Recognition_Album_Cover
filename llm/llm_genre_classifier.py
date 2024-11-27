@@ -9,6 +9,7 @@ from threading import Lock
 from typing import Optional
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from openai import OpenAI
@@ -24,7 +25,7 @@ class LLMClassifier:
     def __init__(self, id=None) -> None:
         self.id = id if id else uuid.uuid4()
         self.dataframe = pd.DataFrame()
-        self.genres = [
+        self.class_names = [
             "electronic",
             "rock",
             "folk, world, & country",
@@ -98,6 +99,7 @@ class LLMClassifier:
             # Predict genre
             prediction = self.predict_genre(encoded_image)
             predictions.append(prediction)
+            print(predictions)
 
             logger.info(f"Processed image {count}/{len(dataset)}: {prediction}")
             count += 1
@@ -268,7 +270,7 @@ class LLMClassifier:
                                 "type": "text",
                                 "text": (
                                     f"This is an image of an album cover. "
-                                    f"The possible music genres are: {self.genres}. "
+                                    f"The possible music genres are: {self.class_names}. "
                                     f"Based on the visual style and design, predict the genre. "
                                     f"Only predict the genre with no explanation."
                                 ),
@@ -300,6 +302,25 @@ class LLMClassifier:
         except Exception as e:
             logger.error(f"Failed to save results: {e}")
 
+    def encode_labels(labels, class_names):
+        """
+        Encodes a list of string labels into their corresponding integer indices.
+
+        Args:
+            labels (list): List of string labels to encode.
+            class_names (list): List of all class names in the dataset.
+
+        Returns:
+            list: List of encoded integer labels.
+        """
+        label_to_index = {label: i for i, label in enumerate(class_names)}
+        try:
+            encoded_labels = [label_to_index[label] for label in labels]
+            return encoded_labels
+        except KeyError as e:
+            logger.error(f"Label {e} not found in class names.")
+            raise ValueError(f"Invalid label: {e}")
+
     def evaluate_and_save_results(
         self, dataset_name, true_labels, predicted_labels, output_dir
     ):
@@ -314,22 +335,26 @@ class LLMClassifier:
         """
         try:
             # Generate confusion matrix and classification report
+            predicted_labels = self.encode_labels(predicted_labels, self.class_names)
+
             conf_matrix = confusion_matrix(true_labels, predicted_labels)
-            class_report = classification_report(true_labels, predicted_labels)
+            class_report = classification_report(
+                true_labels, predicted_labels, target_names=self.class_names
+            )
 
             # Save confusion matrix as an image
             plt.figure(figsize=(10, 8))
-            sns.heatmap(
-                conf_matrix,
-                annot=True,
-                fmt="d",
-                cmap="Blues",
-                xticklabels=set(true_labels),
-                yticklabels=set(true_labels),
+            plt.figure(figsize=(10, 8))
+            sns.heatmap(conf_matrix, annot=True, fmt="g")
+            plt.xlabel("Predicted labels")
+            plt.ylabel("True labels")
+            plt.title("Confusion Matrix")
+            plt.xticks(
+                ticks=np.arange(len(self.class_names)) + 0.5, labels=self.class_names
             )
-            plt.title(f"{dataset_name.capitalize()} Confusion Matrix")
-            plt.xlabel("Predicted Labels")
-            plt.ylabel("True Labels")
+            plt.yticks(
+                ticks=np.arange(len(self.class_names)) + 0.5, labels=self.class_names
+            )
             conf_matrix_path = f"{output_dir}/{dataset_name}_confusion_matrix.png"
             plt.savefig(conf_matrix_path)
             plt.close()
@@ -342,6 +367,8 @@ class LLMClassifier:
                     f"Classification Report for {dataset_name.capitalize()} Dataset\n"
                 )
                 f.write(class_report)
+                f.write("Confusion matrix")
+                f.write(conf_matrix)
             logger.info(f"Classification report saved to {report_path}")
 
         except Exception as e:
