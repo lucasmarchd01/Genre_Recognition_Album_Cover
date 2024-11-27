@@ -81,7 +81,7 @@ class LLMClassifier:
         """
         predictions = []
 
-        count = 0
+        count = 1
         for idx, row in dataset.iterrows():
             image_path = row["image_location"]
 
@@ -99,7 +99,6 @@ class LLMClassifier:
             # Predict genre
             prediction = self.predict_genre(encoded_image)
             predictions.append(prediction)
-            print(predictions)
 
             logger.info(f"Processed image {count}/{len(dataset)}: {prediction}")
             count += 1
@@ -273,6 +272,7 @@ class LLMClassifier:
                                     f"The possible music genres are: {self.class_names}. "
                                     f"Based on the visual style and design, predict the genre. "
                                     f"Only predict the genre with no explanation."
+                                    f"Only predict a genre from one of the possible supllied music genres."
                                 ),
                             },
                             {
@@ -283,7 +283,7 @@ class LLMClassifier:
                     }
                 ],
             )
-            return response.choices[0].message.content
+            return response.choices[0].message.content.lower()
         except Exception as e:
             return f"Error occurred: {e}"
 
@@ -302,7 +302,7 @@ class LLMClassifier:
         except Exception as e:
             logger.error(f"Failed to save results: {e}")
 
-    def encode_labels(labels, class_names):
+    def encode_labels(self, labels):
         """
         Encodes a list of string labels into their corresponding integer indices.
 
@@ -313,7 +313,7 @@ class LLMClassifier:
         Returns:
             list: List of encoded integer labels.
         """
-        label_to_index = {label: i for i, label in enumerate(class_names)}
+        label_to_index = {label: i for i, label in enumerate(self.class_names)}
         try:
             encoded_labels = [label_to_index[label] for label in labels]
             return encoded_labels
@@ -335,11 +335,14 @@ class LLMClassifier:
         """
         try:
             # Generate confusion matrix and classification report
-            predicted_labels = self.encode_labels(predicted_labels, self.class_names)
+            predicted_labels = self.encode_labels(predicted_labels)
 
             conf_matrix = confusion_matrix(true_labels, predicted_labels)
             class_report = classification_report(
-                true_labels, predicted_labels, target_names=self.class_names
+                true_labels,
+                predicted_labels,
+                target_names=self.class_names,
+                labels=range(5),
             )
 
             # Save confusion matrix as an image
@@ -366,9 +369,8 @@ class LLMClassifier:
                 f.write(
                     f"Classification Report for {dataset_name.capitalize()} Dataset\n"
                 )
-                f.write(class_report)
-                f.write("Confusion matrix")
-                f.write(conf_matrix)
+                f.write(f"\n{class_report}\n")
+                f.write(f"Confusion Matrix:\n{conf_matrix}\n")
             logger.info(f"Classification report saved to {report_path}")
 
         except Exception as e:
