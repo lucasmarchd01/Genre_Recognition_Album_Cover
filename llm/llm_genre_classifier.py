@@ -53,10 +53,20 @@ class LLMClassifier:
             # Calculate wait time based on requests per minute
             min_interval = 60 / self.rate_limits["RPM"]
             if elapsed < min_interval:
-                logger.info(f"Sleeping... {min_interval - elapsed}")
+                logger.info(
+                    f"Sleeping to respect RPM limit... {min_interval - elapsed:.2f} seconds"
+                )
                 time.sleep(min_interval - elapsed)
 
+            # Track daily request limit
+            if self.request_queue.qsize() >= self.rate_limits["RPD"]:
+                logger.error("Daily request limit reached. Pausing until the next day.")
+                time_to_next_day = 86400 - (current_time % 86400)
+                time.sleep(time_to_next_day)
+
+            # Record the time of this request
             self.last_request_time = time.time()
+            self.request_queue.put(current_time)
 
     def iterate_and_predict(self, dataset):
         """
