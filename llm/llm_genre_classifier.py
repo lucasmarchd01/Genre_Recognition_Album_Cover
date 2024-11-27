@@ -70,6 +70,7 @@ class LLMClassifier:
         """
         predictions = []
 
+        count = 0
         for idx, row in dataset.iterrows():
             image_path = row["image_location"]
 
@@ -88,7 +89,8 @@ class LLMClassifier:
             prediction = self.predict_genre(encoded_image)
             predictions.append(prediction)
 
-            logger.info(f"Processed image {idx + 1}/{len(dataset)}: {prediction}")
+            logger.info(f"Processed image {count}/{len(dataset)}: {prediction}")
+            count += 1
 
         return predictions
 
