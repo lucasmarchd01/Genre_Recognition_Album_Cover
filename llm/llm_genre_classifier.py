@@ -21,8 +21,8 @@ client = OpenAI()
 
 
 class LLMClassifier:
-    def __init__(self) -> None:
-        self.id = uuid.uuid4()
+    def __init__(self, id=None) -> None:
+        self.id = id if id else uuid.uuid4()
         self.dataframe = pd.DataFrame()
         self.genres = [
             "electronic",
@@ -34,6 +34,7 @@ class LLMClassifier:
         self.train_data = None
         self.val_data = None
         self.test_data = None
+        self.balance_type = "downsampling"
         self.rate_limits = {
             "RPM": 500,  # Requests per minute
             "RPD": 10000,  # Requests per day
@@ -52,6 +53,7 @@ class LLMClassifier:
             # Calculate wait time based on requests per minute
             min_interval = 60 / self.rate_limits["RPM"]
             if elapsed < min_interval:
+                logger.info(f"Sleeping... {min_interval - elapsed}")
                 time.sleep(min_interval - elapsed)
 
             self.last_request_time = time.time()
