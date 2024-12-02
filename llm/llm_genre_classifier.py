@@ -4,6 +4,7 @@ import logging
 import os
 import time
 import uuid
+from difflib import get_close_matches
 from queue import Queue
 from threading import Lock
 from typing import Optional
@@ -16,6 +17,11 @@ from openai import OpenAI
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 from sklearn.utils import resample
+from tenacity import (
+    retry,
+    stop_after_attempt,
+    wait_random_exponential,
+)
 
 logger = logging.getLogger(__name__)
 client = OpenAI()
@@ -45,19 +51,10 @@ class LLMClassifier:
         self.lock = Lock()
         self.request_queue = Queue()
 
-    def enforce_rate_limits(self):
+    def enforce_daily_limit(self):
         """Enforce API rate limits by ensuring appropriate delays."""
         with self.lock:
             current_time = time.time()
-            elapsed = current_time - self.last_request_time
-
-            # Calculate wait time based on requests per minute
-            min_interval = 60 / self.rate_limits["RPM"]
-            if elapsed < min_interval:
-                logger.info(
-                    f"Sleeping to respect RPM limit... {min_interval - elapsed:.2f} seconds"
-                )
-                time.sleep(min_interval - elapsed)
 
             # Track daily request limit
             if self.request_queue.qsize() >= self.rate_limits["RPD"]:
@@ -94,13 +91,13 @@ class LLMClassifier:
                 continue
 
             # Enforce rate limits
-            self.enforce_rate_limits()
+            self.enforce_daily_limit()
 
             # Predict genre
             prediction = self.predict_genre(encoded_image)
             predictions.append(prediction)
 
-            logger.info(f"Processed image {count}/{len(dataset)}: {prediction}")
+            logger.info(f"\nProcessed image {count}/{len(dataset)}: {prediction}")
             count += 1
 
         return predictions
@@ -117,22 +114,22 @@ class LLMClassifier:
         Returns:
             dict: Predicted genres for each dataset.
         """
-        logger.info("Starting predictions for training set...")
-        train_predictions = self.iterate_and_predict(train_data)
+        # logger.info("Starting predictions for training set...")
+        # train_predictions = self.iterate_and_predict(train_data)
 
-        logger.info("Starting predictions for validation set...")
-        val_predictions = self.iterate_and_predict(val_data)
+        # logger.info("Starting predictions for validation set...")
+        # val_predictions = self.iterate_and_predict(val_data)
 
         logger.info("Starting predictions for test set...")
         test_predictions = self.iterate_and_predict(test_data)
 
         return {
-            "train": train_predictions,
-            "validation": val_predictions,
+            # "train": train_predictions,
+            # "validation": val_predictions,
             "test": test_predictions,
         }
 
-    def load_data(self, full_csv, directory, val_size=0.15, test_size=0.15):
+    def load_data(self, full_csv, directory, val_size=0.15, test_size=0.15) -> bool:
         """
         Load training, validation, and test data from a full CSV file.
 
@@ -247,45 +244,87 @@ class LLMClassifier:
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
-    def predict_genre(self, image):
+    @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
+    def predict_genre(self, image) -> str:
         """
         Predict the music genre based on an album cover image using OpenAI API.
 
         Args:
-            image (str): a base 64 encoded image
+            image (str): a base64 encoded image.
 
         Returns:
             str: Predicted genre from the model.
         """
+        rate_limit_per_minute = self.rate_limits["RPM"]
+        delay = 60.0 / rate_limit_per_minute
+        time.sleep(delay)
 
         try:
+            tools = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": "get_genre",
+                        "parameters": {
+                            "type": "object",
+                            "properties": {
+                                "genre": {"type": "string", "enum": self.class_names},
+                            },
+                            "required": ["genre"],
+                            "additionalProperties": False,
+                        },
+                    },
+                }
+            ]
             response = client.chat.completions.create(
-                model="gpt-4o-mini",
+                model="gpt-4o-mini",  # Make sure you're using a model that supports structured outputs
                 messages=[
                     {
                         "role": "user",
                         "content": [
                             {
                                 "type": "text",
-                                "text": (
-                                    f"This is an image of an album cover. "
-                                    f"The possible music genres are: {self.class_names}. "
-                                    f"Based on the visual style and design, predict the genre. "
-                                    f"Only predict the genre with no explanation."
-                                    f"Only predict a genre from one of the possible supllied music genres."
-                                ),
+                                "text": f"This is an image of an album cover. "
+                                f"The possible music genres are: {' - '.join(self.class_names)}. "
+                                f"Based on the visual style and design, predict the genre. "
+                                f"Your response must strictly adhere to the predefined options.",
                             },
                             {
                                 "type": "image_url",
-                                "image_url": {"url": f"data:image/jpeg;base64,{image}"},
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{image}",
+                                },
                             },
                         ],
-                    }
+                    },
                 ],
+                tools=tools,
+                tool_choice="required",
             )
-            return response.choices[0].message.content.lower()
+            tool_call = response.choices[0].message.tool_calls[0]
+            arguments = json.loads(tool_call.function.arguments)
+            predicted_genre = arguments.get("genre")
+            return self.get_genre(predicted_genre)
         except Exception as e:
-            return f"Error occurred: {e}"
+            logger.exception(f"Error occurred during genre prediction: {e}")
+            return "error"
+
+    def get_genre(self, genre: str):
+        """
+        Returns the genre if it matches one in the class_names list.
+        If not, attempts fuzzy matching to find the closest match.
+        """
+        if genre in self.class_names:
+            return genre
+        else:
+            # Fuzzy matching to find the closest genre
+            closest_matches = get_close_matches(
+                genre, self.class_names, n=1, cutoff=0.6
+            )
+            if closest_matches:
+                return closest_matches[0]
+            else:
+                return None
 
     def save_results_to_file(self, results, file_path):
         """
@@ -308,7 +347,6 @@ class LLMClassifier:
 
         Args:
             labels (list): List of string labels to encode.
-            class_names (list): List of all class names in the dataset.
 
         Returns:
             list: List of encoded integer labels.
@@ -385,8 +423,8 @@ class LLMClassifier:
             output_dir (str): Directory where evaluation outputs will be saved.
         """
         datasets = {
-            "train": self.train_data,
-            "validation": self.val_data,
+            # "train": self.train_data,
+            # "validation": self.val_data,
             "test": self.test_data,
         }
 

@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
     # Create results directory if it does not exist
     ID = uuid.uuid4()
-    results_dir = f"results_{ID}"
+    results_dir = f"results/llm/results_{ID}"
     os.makedirs(results_dir, exist_ok=True)
 
     # Set up the logger
