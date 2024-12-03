@@ -38,9 +38,7 @@ if __name__ == "__main__":
     )
 
     llm_classifier.save_results_to_file(
-        predictions, f"results_{llm_classifier.id}.json"
+        predictions, f"{results_dir}/results_{llm_classifier.id}.json"
     )
 
-    evaluation = llm_classifier.evaluate_all_datasets(
-        predictions, f"results_{llm_classifier.id}"
-    )
+    evaluation = llm_classifier.evaluate_all_datasets(predictions, results_dir)

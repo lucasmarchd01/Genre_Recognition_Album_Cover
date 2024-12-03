@@ -318,13 +318,8 @@ class LLMClassifier:
             return genre
         else:
             # Fuzzy matching to find the closest genre
-            closest_matches = get_close_matches(
-                genre, self.class_names, n=1, cutoff=0.6
-            )
-            if closest_matches:
-                return closest_matches[0]
-            else:
-                return None
+            closest_matches = get_close_matches(genre, self.class_names, n=1, cutoff=0)
+            return closest_matches[0]
 
     def save_results_to_file(self, results, file_path):
         """
