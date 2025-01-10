@@ -1,0 +1,20 @@
+Classification Report for Test Dataset
+
+                        precision    recall  f1-score   support
+
+            electronic       0.74      0.61      0.67       968
+                  rock       0.61      0.71      0.66       979
+folk, world, & country       0.59      0.82      0.68       947
+                   pop       0.62      0.48      0.54       942
+                  jazz       0.92      0.78      0.85       990
+
+              accuracy                           0.68      4826
+             macro avg       0.70      0.68      0.68      4826
+          weighted avg       0.70      0.68      0.68      4826
+
+Confusion Matrix:
+[[594 134  89 130  21]
+ [ 76 694 155  51   3]
+ [ 36  50 776  59  26]
+ [ 63 199 212 451  17]
+ [ 32  58  88  37 775]]
