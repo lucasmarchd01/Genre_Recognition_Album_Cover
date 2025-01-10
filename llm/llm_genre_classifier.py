@@ -102,6 +102,31 @@ class LLMClassifier:
 
         return predictions
 
+    def iterate_and_predict_msd(self, dataset):
+        """
+        Iterate through a dataset and predict genres using the OpenAI API.
+
+        Args:
+            dataset (pd.DataFrame): A DataFrame containing image paths and genre labels.
+
+        Returns:
+            list: A list of predicted genres.
+        """
+        predictions = []
+
+        count = 1
+        for idx, row in dataset.iterrows():
+            image_path = row["image_url"]
+
+            self.enforce_daily_limit()
+            prediction = self.predict_genre(image_path)
+            predictions.append(prediction)
+
+            logger.info(f"\nProcessed image {count}/{len(dataset)}: {prediction}")
+            count += 1
+
+        return predictions
+
     def process_datasets(self, train_data, val_data, test_data):
         """
         Process all datasets: training, validation, and testing.
@@ -121,7 +146,7 @@ class LLMClassifier:
         # val_predictions = self.iterate_and_predict(val_data)
 
         logger.info("Starting predictions for test set...")
-        test_predictions = self.iterate_and_predict(test_data)
+        test_predictions = self.iterate_and_predict_msd(test_data)
 
         return {
             # "train": train_predictions,
@@ -245,7 +270,7 @@ class LLMClassifier:
             return base64.b64encode(image_file.read()).decode("utf-8")
 
     @retry(wait=wait_random_exponential(min=1, max=60), stop=stop_after_attempt(6))
-    def predict_genre(self, image) -> str:
+    def predict_genre(self, image, base64=False) -> str:
         """
         Predict the music genre based on an album cover image using OpenAI API.
 
@@ -258,6 +283,10 @@ class LLMClassifier:
         rate_limit_per_minute = self.rate_limits["RPM"]
         delay = 60.0 / rate_limit_per_minute
         time.sleep(delay)
+        if base64:
+            url = f"data:image/jpeg;base64,{image}"
+        else:
+            url = image
 
         try:
             tools = [
@@ -277,7 +306,7 @@ class LLMClassifier:
                 }
             ]
             response = client.chat.completions.create(
-                model="gpt-4o-mini",  # Make sure you're using a model that supports structured outputs
+                model="gpt-4o-mini",
                 messages=[
                     {
                         "role": "user",
@@ -292,7 +321,7 @@ class LLMClassifier:
                             {
                                 "type": "image_url",
                                 "image_url": {
-                                    "url": f"data:image/jpeg;base64,{image}",
+                                    "url": url,
                                 },
                             },
                         ],
@@ -336,6 +365,28 @@ class LLMClassifier:
         except Exception as e:
             logger.error(f"Failed to save results: {e}")
 
+    def load_results_from_file(self, file_path):
+        """
+        Load prediction results from a JSON file.
+
+        Args:
+            file_path (str): Path to the file from which results should be loaded.
+
+        Returns:
+            dict: The loaded prediction results.
+
+        Raises:
+            Exception: If loading fails due to file not found, invalid JSON, etc.
+        """
+        try:
+            with open(file_path, "r") as f:
+                results = json.load(f)
+            logger.info(f"Results successfully loaded from {file_path}")
+            return results
+        except Exception as e:
+            logger.error(f"Failed to load results: {e}")
+            raise
+
     def encode_labels(self, labels):
         """
         Encodes a list of string labels into their corresponding integer indices.
@@ -369,13 +420,14 @@ class LLMClassifier:
         try:
             # Generate confusion matrix and classification report
             predicted_labels = self.encode_labels(predicted_labels)
+            true_labels = self.encode_labels(true_labels)
 
             conf_matrix = confusion_matrix(true_labels, predicted_labels)
             class_report = classification_report(
                 true_labels,
                 predicted_labels,
                 target_names=self.class_names,
-                labels=range(5),
+                labels=range(len(self.class_names)),
             )
 
             # Save confusion matrix as an image
