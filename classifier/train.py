@@ -33,7 +33,7 @@ def main():
         "--balance_type",
         type=str,
         choices=["downsampling", "upsampling", "none"],
-        default="downsampling",
+        default="none",
         help="Balance type for training data",
     )
 

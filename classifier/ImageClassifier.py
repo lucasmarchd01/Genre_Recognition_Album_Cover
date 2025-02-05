@@ -26,7 +26,7 @@ class ImageClassifier:
         batch_size=8,
         learning_rate=0.0001,
         epochs=50,
-        balance_type="downsampling",
+        balance_type="",
     ):
         """
         Initialize the ImageClassifier object.
@@ -244,7 +244,7 @@ class ImageClassifier:
 
         # # Dynamically load the selected base model
         # base_model_class = base_model_dict[base_model_name]
-        base_model = tf.keras.applications.MobileNetV2(
+        base_model = tf.keras.applications.VGG16(
             weights="imagenet",
             include_top=False,
             input_shape=(self.img_width, self.img_height, 3),
