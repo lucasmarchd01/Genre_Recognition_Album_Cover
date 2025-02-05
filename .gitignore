@@ -1,6 +1,7 @@
 /data/images_allmusic
 /data/images_discogs
 /data/images_discogs_validation
+/data/images_msd
 /data/archive
 /data/data_exploration.ipynb
 /logs
@@ -13,3 +14,4 @@
 .DS_Store
 __pycache__/
 .vscode/
+*.gz

@@ -3,7 +3,7 @@ import csv
 import argparse
 import os
 import logging
-from typing import Optional, List, Dict
+from typing import List, Dict
 import requests
 
 
