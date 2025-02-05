@@ -18,4 +18,4 @@ tar xf ~/2025-02-05.tar -C $SLURM_TMPDIR
 
 # Start training
 tensorboard --logdir=/tmp/logs --host 0.0.0.0 --load_fast false &
-python $SOURCEDIR/classifier/train.py --csv_file $SLURM_TMPDIR/data/csv_msd/unique_art_final.csv --directory $SLURM_TMPDIR
+python $SOURCEDIR/classifier/train.py --csv_file $SLURM_TMPDIR/data/csv/csv_msd/unique_art_final.csv --directory $SLURM_TMPDIR
