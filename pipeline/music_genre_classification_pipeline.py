@@ -3,8 +3,10 @@ import requests
 import json
 import pandas as pd
 import discogs_client
+from discogs_client.exceptions import HTTPError
 import os
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,12 @@ class MusicBrainzClient:
             "genre-recognition", "1.0", "lucas.march@mail.mcgill.ca"
         )
 
-    def search_albums(self, start_date="2024-01-01", end_date="2025-02-01", limit=25):
+    def search_albums(
+        self,
+        start_date="2024-07-19",
+        end_date=datetime.today().strftime("%Y-%m-%d"),
+        limit=25,
+    ):
         """
         Retrieve albums released from start_date onwards using the MusicBrainz API.
         Uses pagination to fetch all results.
@@ -99,10 +106,8 @@ class MusicBrainzClient:
                     )
 
                 offset += limit  # Move to the next page
-                break
             except musicbrainzngs.WebServiceError as e:
                 logging.error(f"MusicBrainz API error: {e}")
-                break
 
         return albums
 
@@ -115,11 +120,20 @@ class DiscogsClient:
 
     def get_genre(self, album: Album):
         """Search Discogs for an album and get its genre."""
-        results = self.client.search(album.title, type="release", artist=album.artist)
-        if results and results[0].genres:
-            logging.info(f"getting genres for result {results[0]}")
-            album.genre_discogs = results[0].genres
-        else:
+        try:
+            results = self.client.search(
+                album.title, type="release", artist=album.artist
+            )
+            if results and results[0].genres:
+                logging.info(f"getting genres for result {results[0]}")
+                album.genre_discogs = results[0].genres
+            else:
+                album.genre_discogs = ""
+        except HTTPError as e:
+            logging.error(f"HTTP error occurred: {e}")
+            album.genre_discogs = ""
+        except Exception as e:
+            logging.error(f"Unexpected error fetching genre from Discogs: {e}")
             album.genre_discogs = ""
 
 

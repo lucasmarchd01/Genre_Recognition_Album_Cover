@@ -22,6 +22,7 @@ from tenacity import (
     stop_after_attempt,
     wait_random_exponential,
 )
+import requests
 
 logger = logging.getLogger(__name__)
 client = OpenAI()
@@ -41,6 +42,7 @@ class LLMClassifier:
         self.train_data = None
         self.val_data = None
         self.test_data = None
+        self.full_data = None
         self.balance_type = "downsampling"
         self.rate_limits = {
             "RPM": 500,  # Requests per minute
@@ -102,12 +104,37 @@ class LLMClassifier:
 
         return predictions
 
-    def iterate_and_predict_msd(self, dataset):
+    def extract_image_url(self, json_url):
         """
-        Iterate through a dataset and predict genres using the OpenAI API.
+        Extracts the actual image URL from the given JSON response URL.
 
         Args:
-            dataset (pd.DataFrame): A DataFrame containing image paths and genre labels.
+            json_url (str): The URL pointing to a JSON response containing image metadata.
+
+        Returns:
+            str or None: The extracted image URL, or None if it doesn't exist.
+        """
+        try:
+            response = requests.get(json_url, timeout=5)
+            response.raise_for_status()
+
+            json_data = response.json()
+            images = json_data.get("images", [])
+
+            for image in images:
+                if image.get("front", False):  # Look for the front cover image
+                    return image.get("image")
+        except requests.RequestException as e:
+            logger.error(f"Error fetching image JSON from {json_url}: {e}")
+
+        return None
+
+    def iterate_and_predict_url(self, dataset):
+        """
+        Iterate through a dataset and predict genres using extracted image URLs.
+
+        Args:
+            dataset (pd.DataFrame): A DataFrame containing image JSON URLs and genre labels.
 
         Returns:
             list: A list of predicted genres.
@@ -116,10 +143,19 @@ class LLMClassifier:
 
         count = 1
         for idx, row in dataset.iterrows():
-            image_path = row["image_url"]
+            json_url = row["image_url"]
+
+            # Extract actual image URL
+            image_url = self.extract_image_url(json_url)
+            if not image_url:
+                logger.warning(
+                    f"Skipping entry {count}/{len(dataset)}: No valid image found."
+                )
+                predictions.append("")
+                continue
 
             self.enforce_daily_limit()
-            prediction = self.predict_genre(image_path)
+            prediction = self.predict_genre(image_url)
             predictions.append(prediction)
 
             logger.info(f"\nProcessed image {count}/{len(dataset)}: {prediction}")
@@ -146,7 +182,27 @@ class LLMClassifier:
         # val_predictions = self.iterate_and_predict(val_data)
 
         logger.info("Starting predictions for test set...")
-        test_predictions = self.iterate_and_predict_msd(test_data)
+        test_predictions = self.iterate_and_predict_url(test_data)
+
+        return {
+            # "train": train_predictions,
+            # "validation": val_predictions,
+            "test": test_predictions,
+        }
+
+    def process_dataset(self, dataset):
+        """
+        Process all datasets: training, validation, and testing.
+
+        Args:
+            dataset (pd.DataFrame): dataset
+
+        Returns:
+            dict: Predicted genres for each dataset.
+        """
+
+        logger.info("Starting predictions for dataset...")
+        test_predictions = self.iterate_and_predict_url(dataset)
 
         return {
             # "train": train_predictions,
@@ -472,7 +528,7 @@ class LLMClassifier:
         datasets = {
             # "train": self.train_data,
             # "validation": self.val_data,
-            "test": self.test_data,
+            "test": self.full_data,
         }
 
         for dataset_name, dataset in datasets.items():
