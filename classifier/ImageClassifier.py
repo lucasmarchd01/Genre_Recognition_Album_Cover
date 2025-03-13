@@ -76,12 +76,21 @@ class ImageClassifier:
         # Keep only the image location and genre label columns
         data = data[["image_location", "genre_label"]]
 
+        # Identify minority class labels
+        class_counts = self.dataframe["genre_label"].value_counts()
+        minority_classes = class_counts[
+            class_counts < class_counts.median()
+        ].index.tolist()
+
         def load_image_and_label(image_location, label):
             try:
                 img = tf.io.read_file(image_location)
                 img = tf.image.decode_jpeg(img, channels=3)
                 img = tf.image.convert_image_dtype(img, tf.float32)
                 img = tf.image.resize(img, [self.img_width, self.img_height])
+                # Apply augmentation only if the class is a minority class
+                if label in minority_classes:
+                    img = self.augment_image(img)
             except tf.errors.InvalidArgumentError as e:
                 logger.error(f"Error loading image {image_location}: {e}")
                 img = tf.zeros((self.img_width, self.img_height, 3))
@@ -104,6 +113,17 @@ class ImageClassifier:
         dataset = dataset.prefetch(tf.data.AUTOTUNE)
 
         return dataset
+
+    def augment_image(image):
+        """
+        Apply augmentation techniques to artificially increase dataset size.
+        """
+        image = tf.image.random_flip_left_right(image)
+        image = tf.image.random_flip_up_down(image)
+        image = tf.image.random_brightness(image, max_delta=0.2)
+        image = tf.image.random_contrast(image, 0.8, 1.2)
+        image = tf.image.random_saturation(image, 0.8, 1.2)
+        return image
 
     def load_data(self, full_csv, directory, val_size=0.15, test_size=0.15):
         """
@@ -180,22 +200,34 @@ class ImageClassifier:
             return None
 
         data = self.dataframe
+        class_counts = data["genre_label"].value_counts()
+        majority_class_size = class_counts.max()  # Size of largest class
 
         if balance_type == "upsampling":
             balanced_data = pd.DataFrame()
+
             for label in data["genre_label"].unique():
                 label_data = data[data["genre_label"] == label]
-                balanced_data = pd.concat(
-                    [
-                        balanced_data,
-                        resample(
-                            label_data,
-                            replace=True,
-                            n_samples=len(data) // data["genre_label"].nunique(),
-                            random_state=42,
-                        ),
-                    ]
-                )
+
+                if len(label_data) < majority_class_size:
+                    # Duplicate and augment minority class data
+                    augmented_samples = []
+                    num_duplicates = majority_class_size // len(
+                        label_data
+                    )  # How many times to duplicate
+
+                    for _ in range(num_duplicates):
+                        augmented_samples.append(label_data.copy())
+
+                    augmented_df = pd.concat(augmented_samples, ignore_index=True)
+
+                    balanced_data = pd.concat(
+                        [balanced_data, augmented_df], ignore_index=True
+                    )
+                else:
+                    balanced_data = pd.concat(
+                        [balanced_data, label_data], ignore_index=True
+                    )
 
         elif balance_type == "downsampling":
             balanced_data = pd.DataFrame()
